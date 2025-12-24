@@ -274,7 +274,7 @@ export interface SolutionComponentSummary {
   msdyn_objectid: string
   msdyn_objecttypecode: number
   msdyn_schemaname: string
-  msdyn_primaryidattribute: string
+  msdyn_primaryidattribute?: string
   msdyn_iscustom: boolean
   msdyn_ismanaged: boolean
   msdyn_solutionid: string

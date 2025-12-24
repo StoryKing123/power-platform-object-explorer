@@ -71,7 +71,9 @@ export function useComponentData(
         let components: Component[] = []
 
         // NEW: If search query exists and is >= 2 chars, use server-side search
-        if (searchQuery && searchQuery.trim().length >= 2) {
+        // EXCEPTION: Some categories (flows, workflows) need specialized search to filter correctly
+        const useGeneralSearch = searchQuery && searchQuery.trim().length >= 2 && !['flows', 'workflows'].includes(category)
+        if (useGeneralSearch) {
           console.log('[useComponentData] Using server-side search:', { searchQuery, category, pageSize, skip })
           const response = await searchComponents(searchQuery, category, pageSize, skip)
           console.log('[useComponentData] Search response:', response)
@@ -81,7 +83,7 @@ export function useComponentData(
           return components
         }
 
-        // EXISTING: Otherwise use current fetch logic
+        // EXISTING: Otherwise use current fetch logic (or specialized search for flows/workflows)
         switch (category) {
           case 'all': {
             // Fetch all categories in parallel
