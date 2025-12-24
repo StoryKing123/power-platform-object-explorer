@@ -45,6 +45,7 @@ export const D365_API_CONFIG = {
     solutions: 'solutions',
     solutionComponents: 'solutioncomponents',
     solutionComponentSummaries: 'msdyn_solutioncomponentsummaries',
+    solutionComponentCountSummaries: 'msdyn_solutioncomponentcountsummaries',
     organizations: 'organizations',
   },
 
@@ -120,6 +121,9 @@ export const COMPONENT_TYPE_CODES: Record<string, number> = {
   pluginAssembly: 91,
   pluginStep: 92,
   webResource: 61,
+  app: 80,
+  canvasApp: 300,
+  securityRole: 20,
 }
 
 // Category to component type mapping for search (supports multiple types per category)
@@ -128,6 +132,7 @@ export const CATEGORY_COMPONENT_TYPES: Record<string, number[]> = {
   forms: [24, 60],  // Both Form and System Form
   views: [26],
   workflows: [29],
+  flows: [29],  // Modern flows (workflows with category 5)
   plugins: [91],
   webResources: [61],
   apps: [300],

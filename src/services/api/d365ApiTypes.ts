@@ -274,10 +274,19 @@ export interface SolutionComponentSummary {
   msdyn_objectid: string
   msdyn_objecttypecode: number
   msdyn_schemaname: string
-  msdyn_primaryidattribute: string
+  msdyn_primaryidattribute?: string
   msdyn_iscustom: boolean
   msdyn_ismanaged: boolean
   msdyn_solutionid: string
+}
+
+// Solution Component Count Summary (for category counts)
+export interface SolutionComponentCountSummary {
+  msdyn_componentlogicalname: string
+  msdyn_componenttype: number
+  msdyn_total: number
+  msdyn_subtype?: number | null
+  msdyn_workflowcategory?: number | null
 }
 
 // Organization

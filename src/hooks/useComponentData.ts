@@ -19,6 +19,8 @@ import { fetchCanvasApps, searchCanvasApps } from '@/services/dataServices/canva
 import { fetchFlows, searchFlows, getFlowCount } from '@/services/dataServices/flowService'
 import { fetchSecurityRoles, searchSecurityRoles, getSecurityRoleCount } from '@/services/dataServices/securityRoleService'
 import { searchComponents } from '@/services/dataServices/searchService'
+import { getCategoryCount as getSummaryCategoryCount } from '@/services/dataServices/componentCountService'
+import type { CategoryCountId } from '@/services/dataServices/componentCountService'
 
 // Import transformers
 import {
@@ -71,7 +73,9 @@ export function useComponentData(
         let components: Component[] = []
 
         // NEW: If search query exists and is >= 2 chars, use server-side search
-        if (searchQuery && searchQuery.trim().length >= 2) {
+        // EXCEPTION: Some categories (flows, workflows) need specialized search to filter correctly
+        const useGeneralSearch = searchQuery && searchQuery.trim().length >= 2 && !['flows', 'workflows'].includes(category)
+        if (useGeneralSearch) {
           console.log('[useComponentData] Using server-side search:', { searchQuery, category, pageSize, skip })
           const response = await searchComponents(searchQuery, category, pageSize, skip)
           console.log('[useComponentData] Search response:', response)
@@ -81,7 +85,7 @@ export function useComponentData(
           return components
         }
 
-        // EXISTING: Otherwise use current fetch logic
+        // EXISTING: Otherwise use current fetch logic (or specialized search for flows/workflows)
         switch (category) {
           case 'all': {
             // Fetch all categories in parallel
@@ -283,8 +287,37 @@ export function useComponentData(
         return cachedCount
       }
 
+      const summarySupportedCategories: CategoryCountId[] = [
+        'all',
+        'entities',
+        'forms',
+        'views',
+        'workflows',
+        'plugins',
+        'webresources',
+        'apps',
+        'flows',
+        'securityroles',
+        'choices',
+      ]
+
+      const isSummarySupportedCategory = (value: string): value is CategoryCountId =>
+        summarySupportedCategories.includes(value as CategoryCountId)
+
       let count = 0
 
+      // Prefer msdyn_solutioncomponentcountsummaries (single endpoint for all categories)
+      try {
+        if (isSummarySupportedCategory(category)) {
+          count = await getSummaryCategoryCount(category)
+          cacheService.cacheCategoryCount(category, count)
+          return count
+        }
+      } catch (summaryError) {
+        console.warn('Failed to get count from msdyn_solutioncomponentcountsummaries, falling back:', summaryError)
+      }
+
+      // Fallback to legacy per-category counting
       switch (category) {
         case 'entities':
           count = await getEntityCount()
@@ -313,7 +346,7 @@ export function useComponentData(
         case 'securityroles':
           count = await getSecurityRoleCount()
           break
-        case 'all':
+        case 'all': {
           // Sum all counts
           const [entities, forms, views, workflows, plugins, webResources, apps, flows, securityRoles] = await Promise.all([
             getEntityCount(),
@@ -328,11 +361,11 @@ export function useComponentData(
           ])
           count = entities + forms + views + workflows + plugins + webResources + apps + flows + securityRoles
           break
+        }
         default:
           count = 0
       }
 
-      // Cache the count
       cacheService.cacheCategoryCount(category, count)
       return count
     } catch (err) {

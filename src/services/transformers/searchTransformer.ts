@@ -73,6 +73,7 @@ export function transformSearchResult(result: SolutionComponentSummary): Compone
       objectId: result.msdyn_objectid,
       objectTypeCode: result.msdyn_objecttypecode,
       schemaName: result.msdyn_schemaname,
+      primaryIdAttribute: result.msdyn_primaryidattribute,
       isManaged: result.msdyn_ismanaged,
       isCustom: result.msdyn_iscustom,
       // Store original search result for reference

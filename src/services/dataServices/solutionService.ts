@@ -18,6 +18,8 @@ function getComponentTypeCode(category: string): number | null {
     flows: COMPONENT_TYPE_CODES.workflow,
     plugins: COMPONENT_TYPE_CODES.pluginAssembly, // Will handle both assembly and step
     webresources: COMPONENT_TYPE_CODES.webResource,
+    apps: COMPONENT_TYPE_CODES.canvasApp, // Both model-driven and canvas apps
+    securityroles: COMPONENT_TYPE_CODES.securityRole,
   }
   return typeMap[category] || null
 }
@@ -54,10 +56,14 @@ export async function fetchComponentSolutions(
       return getDefaultSolution()
     }
 
-    // For plugins, we need to check both assembly (91) and step (92)
+    // Build filter based on category
     let filter = ''
     if (category === 'plugins') {
+      // For plugins, check both assembly (91) and step (92)
       filter = `(objectid eq ${componentId} and (componenttype eq ${COMPONENT_TYPE_CODES.pluginAssembly} or componenttype eq ${COMPONENT_TYPE_CODES.pluginStep}))`
+    } else if (category === 'apps') {
+      // For apps, check both model-driven (80) and canvas (300)
+      filter = `(objectid eq ${componentId} and (componenttype eq ${COMPONENT_TYPE_CODES.app} or componenttype eq ${COMPONENT_TYPE_CODES.canvasApp}))`
     } else {
       filter = `objectid eq ${componentId} and componenttype eq ${componentType}`
     }

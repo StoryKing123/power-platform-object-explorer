@@ -7,6 +7,23 @@ import type { ODataResponse, SolutionComponentSummary, Solution } from '../api/d
 // Module-level cache for default solution ID
 let defaultSolutionId: string | null = null
 let solutionIdFetchPromise: Promise<string> | null = null
+let supportsPrimaryIdAttribute = true
+
+const PRIMARY_ID_ATTRIBUTE_FIELD = 'msdyn_primaryidattribute'
+
+function buildSelectWithPrimaryIdAttribute(select: string): string {
+  if (select.split(',').map(s => s.trim()).includes(PRIMARY_ID_ATTRIBUTE_FIELD)) return select
+  return `${select},${PRIMARY_ID_ATTRIBUTE_FIELD}`
+}
+
+function isPrimaryIdAttributeUnsupported(error: unknown): boolean {
+  if (!supportsPrimaryIdAttribute) return false
+  if (!error || typeof error !== 'object') return false
+  const message = String((error as any).message ?? '')
+  const detailsMessage = String((error as any).details?.error?.message ?? '')
+  const combined = `${message} ${detailsMessage}`
+  return combined.toLowerCase().includes(PRIMARY_ID_ATTRIBUTE_FIELD)
+}
 
 /**
  * Sanitize search query for OData filter
@@ -23,7 +40,7 @@ function sanitizeSearchQuery(query: string): string {
  * Get default solution ID with caching and deduplication
  * Fetches the default solution ID once and caches it for subsequent calls
  */
-async function getDefaultSolutionId(): Promise<string> {
+async function fetchDefaultSolutionIdInternal(): Promise<string> {
   // Return cached value if available
   if (defaultSolutionId) {
     return defaultSolutionId
@@ -69,6 +86,14 @@ async function getDefaultSolutionId(): Promise<string> {
 export function clearDefaultSolutionCache(): void {
   defaultSolutionId = null
   solutionIdFetchPromise = null
+}
+
+/**
+ * Get default solution ID (exported for reuse)
+ * Uses the same caching/deduplication logic as search.
+ */
+export async function getDefaultSolutionId(): Promise<string> {
+  return await fetchDefaultSolutionIdInternal()
 }
 
 /**
@@ -123,7 +148,7 @@ export async function searchComponents(
 
   try {
     // Get default solution ID (cached after first call)
-    const solutionId = await getDefaultSolutionId()
+    const solutionId = await fetchDefaultSolutionIdInternal()
 
     // Get component types for the category
     const componentTypes = category === 'all' ? undefined : CATEGORY_COMPONENT_TYPES[category]
@@ -135,6 +160,9 @@ export async function searchComponents(
     // Note: msdyn_solutioncomponentsummaries does not support $skip
     const params = {
       ...D365_API_CONFIG.queries.solutionComponentSearch,
+      $select: supportsPrimaryIdAttribute
+        ? buildSelectWithPrimaryIdAttribute(D365_API_CONFIG.queries.solutionComponentSearch.$select)
+        : D365_API_CONFIG.queries.solutionComponentSearch.$select,
       $filter: filter,
       $top: pageSize,
     }
@@ -148,6 +176,10 @@ export async function searchComponents(
 
     return response
   } catch (error) {
+    if (isPrimaryIdAttributeUnsupported(error)) {
+      supportsPrimaryIdAttribute = false
+      return await searchComponents(query, category, pageSize, skip)
+    }
     // Re-throw with more context
     console.error('Search failed:', error)
     throw error

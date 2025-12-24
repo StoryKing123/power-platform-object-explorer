@@ -4,62 +4,101 @@ import { d365ApiClient } from '../api/d365ApiClient'
 import { D365_API_CONFIG } from '../api/d365ApiConfig'
 import type { Category } from '@/data/mockData'
 import { getCanvasAppCount } from './canvasAppService'
+import { fetchCategoryCounts } from './componentCountService'
 
 /**
  * Fetch all categories with their counts
  */
 export async function fetchCategories(): Promise<Category[]> {
   try {
-    // Fetch counts for all categories in parallel
-    const [
-      entityCount,
-      formCount,
-      viewCount,
-      workflowCount,
-      pluginCount,
-      webResourceCount,
-      appCount,
-      flowCount,
-      securityRoleCount,
-      choiceCount,
-    ] = await Promise.all([
-      getEntityCount(),
-      getFormCount(),
-      getViewCount(),
-      getWorkflowCount(),
-      getPluginCount(),
-      getWebResourceCount(),
-      getAppCount(),
-      getFlowCount(),
-      getSecurityRoleCount(),
-      getChoiceCount(),
-    ])
+    let counts:
+      | {
+          all: number
+          entities: number
+          forms: number
+          views: number
+          workflows: number
+          plugins: number
+          webresources: number
+          apps: number
+          flows: number
+          securityroles: number
+          choices: number
+        }
+      | null = null
 
-    const totalCount =
-      entityCount +
-      formCount +
-      viewCount +
-      workflowCount +
-      pluginCount +
-      webResourceCount +
-      appCount +
-      flowCount +
-      securityRoleCount +
-      choiceCount
+    try {
+      counts = await fetchCategoryCounts()
+    } catch (error) {
+      console.warn('Failed to load counts from msdyn_solutioncomponentcountsummaries, falling back:', error)
+    }
+
+    if (!counts) {
+      // Fetch counts for all categories in parallel (fallback)
+      const [
+        entityCount,
+        formCount,
+        viewCount,
+        workflowCount,
+        pluginCount,
+        webResourceCount,
+        appCount,
+        flowCount,
+        securityRoleCount,
+        choiceCount,
+      ] = await Promise.all([
+        getEntityCount(),
+        getFormCount(),
+        getViewCount(),
+        getWorkflowCount(),
+        getPluginCount(),
+        getWebResourceCount(),
+        getAppCount(),
+        getFlowCount(),
+        getSecurityRoleCount(),
+        getChoiceCount(),
+      ])
+
+      const totalCount =
+        entityCount +
+        formCount +
+        viewCount +
+        workflowCount +
+        pluginCount +
+        webResourceCount +
+        appCount +
+        flowCount +
+        securityRoleCount +
+        choiceCount
+
+      counts = {
+        all: totalCount,
+        entities: entityCount,
+        forms: formCount,
+        views: viewCount,
+        workflows: workflowCount,
+        plugins: pluginCount,
+        webresources: webResourceCount,
+        apps: appCount,
+        flows: flowCount,
+        securityroles: securityRoleCount,
+        choices: choiceCount,
+      }
+    }
 
     // Build categories array with real counts
     const categories: Category[] = [
-      { id: 'all', name: 'All Components', icon: 'LayoutGrid', count: totalCount },
-      { id: 'entities', name: 'Entities', icon: 'Database', count: entityCount },
-      { id: 'forms', name: 'Forms', icon: 'FileText', count: formCount },
-      { id: 'views', name: 'Views', icon: 'Table2', count: viewCount },
-      { id: 'workflows', name: 'Workflows', icon: 'GitBranch', count: workflowCount },
-      { id: 'plugins', name: 'Plugins', icon: 'Puzzle', count: pluginCount },
-      { id: 'webresources', name: 'Web Resources', icon: 'Globe', count: webResourceCount },
-      { id: 'apps', name: 'Apps', icon: 'Package', count: appCount },
-      { id: 'flows', name: 'Flows', icon: 'Zap', count: flowCount },
-      { id: 'securityroles', name: 'Security Roles', icon: 'Shield', count: securityRoleCount },
-      { id: 'choices', name: 'Choices', icon: 'List', count: choiceCount },
+      { id: 'all', name: 'All Components', icon: 'LayoutGrid', count: counts.all },
+      { id: 'entities', name: 'Entities', icon: 'Database', count: counts.entities },
+      { id: 'forms', name: 'Forms', icon: 'FileText', count: counts.forms },
+      { id: 'views', name: 'Views', icon: 'Table2', count: counts.views },
+      { id: 'workflows', name: 'Workflows', icon: 'GitBranch', count: counts.workflows },
+      { id: 'plugins', name: 'Plugins', icon: 'Puzzle', count: counts.plugins },
+      { id: 'webresources', name: 'Web Resources', icon: 'Globe', count: counts.webresources },
+      { id: 'apps', name: 'Apps', icon: 'Package', count: counts.apps },
+      { id: 'flows', name: 'Flows', icon: 'Zap', count: counts.flows },
+      { id: 'securityroles', name: 'Security Roles', icon: 'Shield', count: counts.securityroles },
+      { id: 'choices', name: 'Choices', icon: 'List', count: counts.choices },
     ]
 
     return categories
