@@ -135,8 +135,9 @@ export const CATEGORY_COMPONENT_TYPES: Record<string, number[]> = {
   flows: [29],  // Modern flows (workflows with category 5)
   plugins: [91],
   webResources: [61],
-  apps: [300],
+  apps: [80, 300],  // 80: Model-driven App (appmodule), 300: Canvas App
   securityRoles: [20],
+  choices: [9],  // OptionSet (Choice)
 }
 
 // Form type mappings

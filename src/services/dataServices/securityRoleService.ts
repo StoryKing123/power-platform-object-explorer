@@ -1,74 +1,97 @@
-// Security Role Service - Fetch security roles from D365 Web API
+// Security Role Service - Fetch security roles from msdyn_solutioncomponentsummaries
 
 import { d365ApiClient } from '../api/d365ApiClient'
 import { D365_API_CONFIG } from '../api/d365ApiConfig'
-import type { Role, ODataResponse, ODataParams } from '../api/d365ApiTypes'
+import type { SolutionComponentSummary, ODataResponse, ODataParams } from '../api/d365ApiTypes'
+import { getDefaultSolutionId } from './searchService'
 
 /**
- * Fetch security roles with pagination
- * Note: roles entity doesn't support $skip
+ * 构建 SecurityRole 的 filter 条件
+ * componenttype=20 表示 Role
+ */
+function buildSecurityRoleFilter(solutionId: string, searchQuery?: string): string {
+  const roleTypeFilter = 'msdyn_componenttype eq 20'
+  const solutionFilter = `msdyn_solutionid eq ${solutionId}`
+  const baseFilter = `${roleTypeFilter} and ${solutionFilter}`
+
+  if (searchQuery && searchQuery.trim()) {
+    const sanitizedQuery = searchQuery.replace(/'/g, "''").trim()
+    const searchFilter = `(contains(msdyn_name, '${sanitizedQuery}') or contains(msdyn_displayname, '${sanitizedQuery}'))`
+    return `${baseFilter} and ${searchFilter}`
+  }
+
+  return baseFilter
+}
+
+/**
+ * Fetch security roles with pagination using msdyn_solutioncomponentsummaries
  */
 export async function fetchSecurityRoles(
   pageSize: number = D365_API_CONFIG.pagination.defaultPageSize,
   skip?: number
-): Promise<ODataResponse<Role>> {
+): Promise<ODataResponse<SolutionComponentSummary>> {
+  const solutionId = await getDefaultSolutionId()
+
   const params: ODataParams = {
-    $select: 'roleid,name,description,ismanaged,modifiedon',
-    $expand: 'businessunitid($select=name)',
-    $orderby: 'name asc',
+    $filter: buildSecurityRoleFilter(solutionId),
+    $orderby: 'msdyn_displayname asc',
     $top: pageSize,
-    // Note: $skip is not supported by roles entity
   }
 
-  return await d365ApiClient.getCollection<Role>('roles', params)
+  return await d365ApiClient.getCollection<SolutionComponentSummary>(
+    D365_API_CONFIG.endpoints.solutionComponentSummaries,
+    params,
+    'v9.0'
+  )
 }
 
 /**
- * Fetch security role by ID
- */
-export async function fetchSecurityRoleById(roleId: string): Promise<Role> {
-  const params: ODataParams = {
-    $select: 'roleid,name,description,ismanaged,modifiedon',
-    $expand: 'businessunitid($select=name)',
-  }
-
-  return await d365ApiClient.get<Role>(`roles(${roleId})`, params)
-}
-
-/**
- * Search security roles by query string
- * Note: roles entity doesn't support $skip
+ * Search security roles by query string using msdyn_solutioncomponentsummaries
  */
 export async function searchSecurityRoles(
   query: string,
   pageSize: number = D365_API_CONFIG.pagination.defaultPageSize,
   skip?: number
-): Promise<ODataResponse<Role>> {
-  const params: ODataParams = {
-    $select: 'roleid,name,description,ismanaged,modifiedon',
-    $expand: 'businessunitid($select=name)',
-    $filter: `contains(name,'${query}')`,
-    $orderby: 'name asc',
-    $top: pageSize,
-    // Note: $skip is not supported by roles entity
+): Promise<ODataResponse<SolutionComponentSummary>> {
+  if (!query || query.trim().length < 2) {
+    return {
+      value: [],
+      '@odata.count': 0,
+    }
   }
 
-  return await d365ApiClient.getCollection<Role>('roles', params)
+  const solutionId = await getDefaultSolutionId()
+
+  const params: ODataParams = {
+    $filter: buildSecurityRoleFilter(solutionId, query),
+    $orderby: 'msdyn_displayname asc',
+    $top: pageSize,
+  }
+
+  return await d365ApiClient.getCollection<SolutionComponentSummary>(
+    D365_API_CONFIG.endpoints.solutionComponentSummaries,
+    params,
+    'v9.0'
+  )
 }
 
 /**
- * Get security role count
+ * Get security role count from msdyn_solutioncomponentcountsummaries
  */
 export async function getSecurityRoleCount(): Promise<number> {
   try {
-    const response = await d365ApiClient.getCollection<Role>(
-      'roles',
+    const solutionId = await getDefaultSolutionId()
+    const response = await d365ApiClient.getCollection<any>(
+      D365_API_CONFIG.endpoints.solutionComponentCountSummaries,
       {
-        $count: true,
-        $top: 1,
-      }
+        $select: 'msdyn_componenttype,msdyn_total',
+        $filter: `msdyn_solutionid eq ${solutionId} and msdyn_componenttype eq 20`,
+      },
+      'v9.0'
     )
-    return response['@odata.count'] || 0
+
+    const roleRow = response.value?.find((row: any) => row.msdyn_componenttype === 20)
+    return roleRow?.msdyn_total || 0
   } catch (error) {
     console.warn('Failed to get security role count:', error)
     return 0

@@ -2,10 +2,11 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import type { Component } from '@/data/mockData'
-import type { ApiError } from '@/services/api/d365ApiTypes'
+import type { ApiError, ODataParams, SolutionComponentSummary } from '@/services/api/d365ApiTypes'
 import { cacheService } from '@/services/cacheService'
 import { handleApiError } from '@/utils/errorHandler'
 import { D365_API_CONFIG } from '@/services/api/d365ApiConfig'
+import { d365ApiClient } from '@/services/api/d365ApiClient'
 
 // Import services
 import { fetchEntities, searchEntities, getEntityCount } from '@/services/dataServices/entityService'
@@ -15,28 +16,14 @@ import { fetchWorkflows, searchWorkflows, getWorkflowCount } from '@/services/da
 import { fetchAllPlugins, searchPluginAssemblies, searchPluginSteps, getPluginCount } from '@/services/dataServices/pluginService'
 import { fetchWebResources, searchWebResources, getWebResourceCount } from '@/services/dataServices/webResourceService'
 import { fetchApps, searchApps, getAppCount } from '@/services/dataServices/appService'
-import { fetchCanvasApps, searchCanvasApps } from '@/services/dataServices/canvasAppService'
 import { fetchFlows, searchFlows, getFlowCount } from '@/services/dataServices/flowService'
 import { fetchSecurityRoles, searchSecurityRoles, getSecurityRoleCount } from '@/services/dataServices/securityRoleService'
-import { searchComponents } from '@/services/dataServices/searchService'
+import { fetchChoices, searchChoices, getChoiceCount } from '@/services/dataServices/choiceService'
+import { searchComponents, getDefaultSolutionId } from '@/services/dataServices/searchService'
 import { getCategoryCount as getSummaryCategoryCount } from '@/services/dataServices/componentCountService'
 import type { CategoryCountId } from '@/services/dataServices/componentCountService'
 
 // Import transformers
-import {
-  transformEntity,
-  transformForm,
-  transformSystemView,
-  transformPersonalView,
-  transformWorkflow,
-  transformPluginAssembly,
-  transformPluginStep,
-  transformWebResource,
-  transformApp,
-  transformCanvasApp,
-  transformFlow,
-  transformSecurityRole,
-} from '@/services/transformers/componentTransformer'
 import { transformSearchResult } from '@/services/transformers/searchTransformer'
 
 interface UseComponentDataResult {
@@ -74,7 +61,7 @@ export function useComponentData(
 
         // NEW: If search query exists and is >= 2 chars, use server-side search
         // EXCEPTION: Some categories (flows, workflows) need specialized search to filter correctly
-        const useGeneralSearch = searchQuery && searchQuery.trim().length >= 2 && !['flows', 'workflows'].includes(category)
+        const useGeneralSearch = searchQuery && searchQuery.trim().length >= 2 && !['flows', 'workflows', 'choices'].includes(category)
         if (useGeneralSearch) {
           console.log('[useComponentData] Using server-side search:', { searchQuery, category, pageSize, skip })
           const response = await searchComponents(searchQuery, category, pageSize, skip)
@@ -88,37 +75,41 @@ export function useComponentData(
         // EXISTING: Otherwise use current fetch logic (or specialized search for flows/workflows)
         switch (category) {
           case 'all': {
-            // Fetch all categories in parallel
-            const [entities, forms, views, workflows, plugins, webResources, apps, flows, securityRoles] = await Promise.all([
-              fetchEntities(Math.floor(pageSize / 9), skip).then(r => r.value.map(transformEntity)),
-              fetchForms(Math.floor(pageSize / 9), skip).then(r => r.value.map(transformForm)),
-              fetchAllViews(Math.floor(pageSize / 9), skip).then(r => [
-                ...r.systemViews.map(transformSystemView),
-                ...r.personalViews.map(transformPersonalView),
-              ]),
-              fetchWorkflows(Math.floor(pageSize / 9), skip).then(r => r.value.map(transformWorkflow)),
-              fetchAllPlugins(Math.floor(pageSize / 9), skip).then(r => [
-                ...r.assemblies.map(transformPluginAssembly),
-                ...r.steps.map(transformPluginStep),
-              ]),
-              fetchWebResources(Math.floor(pageSize / 9), skip).then(r => r.value.map(transformWebResource)),
-              fetchApps(Math.floor(pageSize / 9), skip).then(r => r.value.map(transformApp)),
-              fetchFlows(Math.floor(pageSize / 9), skip).then(r => r.value.map(transformFlow)),
-              fetchSecurityRoles(Math.floor(pageSize / 9), skip).then(r => r.value.map(transformSecurityRole)),
-            ])
+            // Fetch all components in a single query without componenttype filter
+            const solutionId = await getDefaultSolutionId()
 
-            components = [...entities, ...forms, ...views, ...workflows, ...plugins, ...webResources, ...apps, ...flows, ...securityRoles]
+            const params: ODataParams = {
+              $filter: `msdyn_solutionid eq ${solutionId}`,
+              $orderby: 'msdyn_displayname asc',
+              $top: pageSize,
+            }
+
+            // Add search filter if provided
+            if (searchQuery && searchQuery.trim()) {
+              const sanitizedQuery = searchQuery.replace(/'/g, "''").trim()
+              const searchFilter = `(contains(msdyn_name, '${sanitizedQuery}') or contains(msdyn_displayname, '${sanitizedQuery}'))`
+              params.$filter = `${params.$filter} and ${searchFilter}`
+            }
+
+            const response = await d365ApiClient.getCollection<SolutionComponentSummary>(
+              D365_API_CONFIG.endpoints.solutionComponentSummaries,
+              params,
+              'v9.0'
+            )
+
+            components = response.value.map(transformSearchResult)
+            setHasMore(!!response['@odata.nextLink'])
             break
           }
 
           case 'entities': {
             if (searchQuery) {
               const response = await searchEntities(searchQuery, pageSize, skip)
-              components = response.value.map(transformEntity)
+              components = response.value.map(transformSearchResult)
               setHasMore(!!response['@odata.nextLink'])
             } else {
               const response = await fetchEntities(pageSize, skip)
-              components = response.value.map(transformEntity)
+              components = response.value.map(transformSearchResult)
               setHasMore(!!response['@odata.nextLink'])
             }
             break
@@ -127,11 +118,11 @@ export function useComponentData(
           case 'forms': {
             if (searchQuery) {
               const response = await searchForms(searchQuery, pageSize, skip)
-              components = response.value.map(transformForm)
+              components = response.value.map(transformSearchResult)
               setHasMore(!!response['@odata.nextLink'])
             } else {
               const response = await fetchForms(pageSize, skip)
-              components = response.value.map(transformForm)
+              components = response.value.map(transformSearchResult)
               setHasMore(!!response['@odata.nextLink'])
             }
             break
@@ -144,17 +135,14 @@ export function useComponentData(
                 searchPersonalViews(searchQuery, Math.floor(pageSize / 2), skip),
               ])
               components = [
-                ...systemResponse.value.map(transformSystemView),
-                ...personalResponse.value.map(transformPersonalView),
+                ...systemResponse.value.map(transformSearchResult),
+                ...personalResponse.value.map(transformSearchResult),
               ]
               setHasMore(!!systemResponse['@odata.nextLink'] || !!personalResponse['@odata.nextLink'])
             } else {
               const response = await fetchAllViews(pageSize, skip)
-              components = [
-                ...response.systemViews.map(transformSystemView),
-                ...response.personalViews.map(transformPersonalView),
-              ]
-              setHasMore(false) // fetchAllViews doesn't return nextLink
+              components = response.value.map(transformSearchResult)
+              setHasMore(!!response['@odata.nextLink'])
             }
             break
           }
@@ -162,11 +150,11 @@ export function useComponentData(
           case 'workflows': {
             if (searchQuery) {
               const response = await searchWorkflows(searchQuery, pageSize, skip)
-              components = response.value.map(transformWorkflow)
+              components = response.value.map(transformSearchResult)
               setHasMore(!!response['@odata.nextLink'])
             } else {
               const response = await fetchWorkflows(pageSize, skip)
-              components = response.value.map(transformWorkflow)
+              components = response.value.map(transformSearchResult)
               setHasMore(!!response['@odata.nextLink'])
             }
             break
@@ -179,17 +167,14 @@ export function useComponentData(
                 searchPluginSteps(searchQuery, Math.floor(pageSize / 2), skip),
               ])
               components = [
-                ...assembliesResponse.value.map(transformPluginAssembly),
-                ...stepsResponse.value.map(transformPluginStep),
+                ...assembliesResponse.value.map(transformSearchResult),
+                ...stepsResponse.value.map(transformSearchResult),
               ]
               setHasMore(!!assembliesResponse['@odata.nextLink'] || !!stepsResponse['@odata.nextLink'])
             } else {
               const response = await fetchAllPlugins(pageSize, skip)
-              components = [
-                ...response.assemblies.map(transformPluginAssembly),
-                ...response.steps.map(transformPluginStep),
-              ]
-              setHasMore(false) // fetchAllPlugins doesn't return nextLink
+              components = response.value.map(transformSearchResult)
+              setHasMore(!!response['@odata.nextLink'])
             }
             break
           }
@@ -197,11 +182,11 @@ export function useComponentData(
           case 'webresources': {
             if (searchQuery) {
               const response = await searchWebResources(searchQuery, pageSize, skip)
-              components = response.value.map(transformWebResource)
+              components = response.value.map(transformSearchResult)
               setHasMore(!!response['@odata.nextLink'])
             } else {
               const response = await fetchWebResources(pageSize, skip)
-              components = response.value.map(transformWebResource)
+              components = response.value.map(transformSearchResult)
               setHasMore(!!response['@odata.nextLink'])
             }
             break
@@ -209,43 +194,25 @@ export function useComponentData(
 
           case 'apps': {
             if (searchQuery) {
-              const [modelDrivenResponse, canvasResponse] = await Promise.all([
-                searchApps(searchQuery, pageSize, skip),
-                searchCanvasApps(searchQuery, pageSize, skip),
-              ])
-              components = [
-                ...modelDrivenResponse.value.map(transformApp),
-                ...canvasResponse.value.map(transformCanvasApp),
-              ]
-              // Note: some app endpoints don't support $skip; keep existing behavior for now.
-              setHasMore(!!modelDrivenResponse['@odata.nextLink'] || !!canvasResponse['@odata.nextLink'])
+              const response = await searchApps(searchQuery, pageSize, skip)
+              components = response.value.map(transformSearchResult)
+              setHasMore(!!response['@odata.nextLink'])
             } else {
-              const [modelDrivenResponse, canvasResponse] = await Promise.all([
-                fetchApps(pageSize, skip),
-                fetchCanvasApps(pageSize, skip),
-              ])
-              components = [
-                ...modelDrivenResponse.value.map(transformApp),
-                ...canvasResponse.value.map(transformCanvasApp),
-              ]
-              setHasMore(!!modelDrivenResponse['@odata.nextLink'] || !!canvasResponse['@odata.nextLink'])
+              const response = await fetchApps(pageSize, skip)
+              components = response.value.map(transformSearchResult)
+              setHasMore(!!response['@odata.nextLink'])
             }
-            // De-dup + stable sort
-            const seen = new Set<string>()
-            components = components
-              .filter((c) => (seen.has(c.id) ? false : (seen.add(c.id), true)))
-              .sort((a, b) => a.name.localeCompare(b.name))
             break
           }
 
           case 'flows': {
             if (searchQuery) {
               const response = await searchFlows(searchQuery, pageSize, skip)
-              components = response.value.map(transformFlow)
+              components = response.value.map(transformSearchResult)
               setHasMore(!!response['@odata.nextLink'])
             } else {
               const response = await fetchFlows(pageSize, skip)
-              components = response.value.map(transformFlow)
+              components = response.value.map(transformSearchResult)
               setHasMore(!!response['@odata.nextLink'])
             }
             break
@@ -254,11 +221,24 @@ export function useComponentData(
           case 'securityroles': {
             if (searchQuery) {
               const response = await searchSecurityRoles(searchQuery, pageSize, skip)
-              components = response.value.map(transformSecurityRole)
+              components = response.value.map(transformSearchResult)
               setHasMore(!!response['@odata.nextLink'])
             } else {
               const response = await fetchSecurityRoles(pageSize, skip)
-              components = response.value.map(transformSecurityRole)
+              components = response.value.map(transformSearchResult)
+              setHasMore(!!response['@odata.nextLink'])
+            }
+            break
+          }
+
+          case 'choices': {
+            if (searchQuery) {
+              const response = await searchChoices(searchQuery, pageSize, skip)
+              components = response.value.map(transformSearchResult)
+              setHasMore(!!response['@odata.nextLink'])
+            } else {
+              const response = await fetchChoices(pageSize, skip)
+              components = response.value.map(transformSearchResult)
               setHasMore(!!response['@odata.nextLink'])
             }
             break
@@ -346,9 +326,12 @@ export function useComponentData(
         case 'securityroles':
           count = await getSecurityRoleCount()
           break
+        case 'choices':
+          count = await getChoiceCount()
+          break
         case 'all': {
           // Sum all counts
-          const [entities, forms, views, workflows, plugins, webResources, apps, flows, securityRoles] = await Promise.all([
+          const [entities, forms, views, workflows, plugins, webResources, apps, flows, securityRoles, choices] = await Promise.all([
             getEntityCount(),
             getFormCount(),
             getViewCount(),
@@ -358,8 +341,9 @@ export function useComponentData(
             getAppCount(),
             getFlowCount(),
             getSecurityRoleCount(),
+            getChoiceCount(),
           ])
-          count = entities + forms + views + workflows + plugins + webResources + apps + flows + securityRoles
+          count = entities + forms + views + workflows + plugins + webResources + apps + flows + securityRoles + choices
           break
         }
         default:

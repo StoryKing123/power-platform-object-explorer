@@ -268,16 +268,63 @@ export interface SolutionComponentSummary {
   msdyn_solutioncomponentsummaryid: string | null
   msdyn_componenttype: number
   msdyn_componenttypename: string
+  msdyn_componentlogicalname: string
   msdyn_name: string
   msdyn_displayname: string
   msdyn_description: string
   msdyn_objectid: string
   msdyn_objecttypecode: number
-  msdyn_schemaname: string
+  msdyn_schemaname: string | null
+  msdyn_uniquename: string | null
   msdyn_primaryidattribute?: string
-  msdyn_iscustom: boolean
+  msdyn_primaryentityname: string | null
+  msdyn_iscustom: boolean | null
+  msdyn_iscustomname: string | null
   msdyn_ismanaged: boolean
+  msdyn_ismanagedname: string
+  msdyn_iscustomizable: boolean
+  msdyn_iscustomizablename: string
   msdyn_solutionid: string
+  msdyn_status: string | number
+  msdyn_statusname: string
+  msdyn_standardstatus: string | number | null
+  msdyn_modifiedon: string | null
+  msdyn_createdon: string | null
+  msdyn_owner: string | null
+  msdyn_owningbusinessunit: string | null
+  msdyn_typename: string | null
+  msdyn_subtype: number | string | null
+  msdyn_canvasappuniqueid: string | null
+  msdyn_total: number
+  msdyn_workflowcategory: number | null
+  msdyn_workflowcategoryname: string | null
+  msdyn_workflowidunique: string | null
+  msdyn_executionorder: number | null
+  msdyn_executionstage: number | null
+  msdyn_isolationmode: number | null
+  msdyn_sdkmessagename: string | null
+  msdyn_connectorinternalid: string | null
+  organizationid: string | null
+  msdyn_isappaware: boolean | null
+  msdyn_isappawarename: string | null
+  msdyn_synctoexternalsearchindex: boolean | null
+  msdyn_logicalcollectionname: string | null
+  msdyn_deployment: number | null
+  msdyn_eventhandler: string | null
+  msdyn_fieldsecurity: number | null
+  msdyn_isdefault: boolean | null
+  msdyn_isdefaultname: string | null
+  msdyn_publickeytoken: string | null
+  msdyn_lcid: number | null
+  msdyn_isauditenabled: boolean | null
+  msdyn_isauditenabledname: string | null
+  msdyn_istableenabled: boolean | null
+  msdyn_fieldtype: string | null
+  msdyn_relatedentity: string | null
+  msdyn_version: string | null
+  msdyn_relatedentityattribute: string | null
+  msdyn_culture: string | null
+  msdyn_hasactivecustomization: boolean
 }
 
 // Solution Component Count Summary (for category counts)

@@ -1,172 +1,113 @@
-// View Service - Fetch views from D365 Web API
+// View Service - Fetch views from msdyn_solutioncomponentsummaries
 
 import { d365ApiClient } from '../api/d365ApiClient'
 import { D365_API_CONFIG } from '../api/d365ApiConfig'
-import type { SavedQuery, UserQuery, ODataResponse, ODataParams } from '../api/d365ApiTypes'
-import { combineFilters, buildViewSearchFilter } from '@/utils/odataHelper'
+import type { SolutionComponentSummary, ODataResponse, ODataParams } from '../api/d365ApiTypes'
+import { getDefaultSolutionId } from './searchService'
 
 /**
- * Fetch system views with pagination
+ * 构建 View 的 filter 条件
+ * componenttype=26 表示 View (SavedQuery)
  */
-export async function fetchSystemViews(
-  pageSize: number = D365_API_CONFIG.pagination.defaultPageSize,
-  skip?: number
-): Promise<ODataResponse<SavedQuery>> {
-  const params: ODataParams = {
-    ...D365_API_CONFIG.queries.systemViews,
-    $top: pageSize,
+function buildViewFilter(solutionId: string, searchQuery?: string): string {
+  const viewTypeFilter = 'msdyn_componenttype eq 26'
+  const solutionFilter = `msdyn_solutionid eq ${solutionId}`
+  const baseFilter = `${viewTypeFilter} and ${solutionFilter}`
+
+  if (searchQuery && searchQuery.trim()) {
+    const sanitizedQuery = searchQuery.replace(/'/g, "''").trim()
+    const searchFilter = `(contains(msdyn_name, '${sanitizedQuery}') or contains(msdyn_displayname, '${sanitizedQuery}'))`
+    return `${baseFilter} and ${searchFilter}`
   }
 
-  if (skip !== undefined && skip > 0) {
-    params.$skip = skip
-  }
-
-  return d365ApiClient.getCollection<SavedQuery>(
-    D365_API_CONFIG.endpoints.systemViews,
-    params
-  )
+  return baseFilter
 }
 
 /**
- * Fetch personal views with pagination
- */
-export async function fetchPersonalViews(
-  pageSize: number = D365_API_CONFIG.pagination.defaultPageSize,
-  skip?: number
-): Promise<ODataResponse<UserQuery>> {
-  const params: ODataParams = {
-    ...D365_API_CONFIG.queries.personalViews,
-    $top: pageSize,
-  }
-
-  if (skip !== undefined && skip > 0) {
-    params.$skip = skip
-  }
-
-  return d365ApiClient.getCollection<UserQuery>(
-    D365_API_CONFIG.endpoints.personalViews,
-    params
-  )
-}
-
-/**
- * Fetch all views (system + personal)
+ * Fetch all views with pagination using msdyn_solutioncomponentsummaries
  */
 export async function fetchAllViews(
   pageSize: number = D365_API_CONFIG.pagination.defaultPageSize,
   skip?: number
-): Promise<{ systemViews: SavedQuery[]; personalViews: UserQuery[] }> {
-  const [systemResponse, personalResponse] = await Promise.all([
-    fetchSystemViews(pageSize, skip),
-    fetchPersonalViews(pageSize, skip),
-  ])
+): Promise<ODataResponse<SolutionComponentSummary>> {
+  const solutionId = await getDefaultSolutionId()
 
-  return {
-    systemViews: systemResponse.value,
-    personalViews: personalResponse.value,
+  const params: ODataParams = {
+    $filter: buildViewFilter(solutionId),
+    $orderby: 'msdyn_displayname asc',
+    $top: pageSize,
   }
+
+  return await d365ApiClient.getCollection<SolutionComponentSummary>(
+    D365_API_CONFIG.endpoints.solutionComponentSummaries,
+    params,
+    'v9.0'
+  )
 }
 
 /**
- * Search system views by query string
+ * Search system views by query string using msdyn_solutioncomponentsummaries
  */
 export async function searchSystemViews(
   query: string,
   pageSize: number = D365_API_CONFIG.pagination.defaultPageSize,
   skip?: number
-): Promise<ODataResponse<SavedQuery>> {
-  const searchFilter = buildViewSearchFilter(query)
-  const baseFilter = D365_API_CONFIG.queries.systemViews.$filter
+): Promise<ODataResponse<SolutionComponentSummary>> {
+  if (!query || query.trim().length < 2) {
+    return {
+      value: [],
+      '@odata.count': 0,
+    }
+  }
+
+  const solutionId = await getDefaultSolutionId()
 
   const params: ODataParams = {
-    $select: D365_API_CONFIG.queries.systemViews.$select,
-    $filter: combineFilters(baseFilter, searchFilter),
-    $orderby: D365_API_CONFIG.queries.systemViews.$orderby,
+    $filter: buildViewFilter(solutionId, query),
+    $orderby: 'msdyn_displayname asc',
     $top: pageSize,
   }
 
-  if (skip !== undefined && skip > 0) {
-    params.$skip = skip
-  }
-
-  return d365ApiClient.getCollection<SavedQuery>(
-    D365_API_CONFIG.endpoints.systemViews,
-    params
+  return await d365ApiClient.getCollection<SolutionComponentSummary>(
+    D365_API_CONFIG.endpoints.solutionComponentSummaries,
+    params,
+    'v9.0'
   )
 }
 
 /**
- * Search personal views by query string
+ * Search personal views (return empty as personal views are not in solution)
  */
 export async function searchPersonalViews(
   query: string,
   pageSize: number = D365_API_CONFIG.pagination.defaultPageSize,
   skip?: number
-): Promise<ODataResponse<UserQuery>> {
-  const searchFilter = buildViewSearchFilter(query)
-  const baseFilter = D365_API_CONFIG.queries.personalViews.$filter
-
-  const params: ODataParams = {
-    $select: D365_API_CONFIG.queries.personalViews.$select,
-    $filter: combineFilters(baseFilter, searchFilter),
-    $orderby: D365_API_CONFIG.queries.personalViews.$orderby,
-    $top: pageSize,
+): Promise<ODataResponse<SolutionComponentSummary>> {
+  return {
+    value: [],
+    '@odata.count': 0,
   }
-
-  if (skip !== undefined && skip > 0) {
-    params.$skip = skip
-  }
-
-  return d365ApiClient.getCollection<UserQuery>(
-    D365_API_CONFIG.endpoints.personalViews,
-    params
-  )
 }
 
 /**
- * Get view count (system + personal)
+ * Get view count from msdyn_solutioncomponentcountsummaries
  */
 export async function getViewCount(): Promise<number> {
-  const [systemCount, personalCount] = await Promise.all([
-    getSystemViewCount(),
-    getPersonalViewCount(),
-  ])
+  try {
+    const solutionId = await getDefaultSolutionId()
+    const response = await d365ApiClient.getCollection<any>(
+      D365_API_CONFIG.endpoints.solutionComponentCountSummaries,
+      {
+        $select: 'msdyn_componenttype,msdyn_total',
+        $filter: `msdyn_solutionid eq ${solutionId} and msdyn_componenttype eq 26`,
+      },
+      'v9.0'
+    )
 
-  return systemCount + personalCount
-}
-
-/**
- * Get system view count
- */
-export async function getSystemViewCount(): Promise<number> {
-  const params: ODataParams = {
-    $filter: D365_API_CONFIG.queries.systemViews.$filter,
-    $count: true,
-    $top: 1,
+    const viewRow = response.value?.find((row: any) => row.msdyn_componenttype === 26)
+    return viewRow?.msdyn_total || 0
+  } catch (error) {
+    console.warn('Failed to get view count:', error)
+    return 0
   }
-
-  const response = await d365ApiClient.getCollection<SavedQuery>(
-    D365_API_CONFIG.endpoints.systemViews,
-    params
-  )
-
-  return response['@odata.count'] || 0
-}
-
-/**
- * Get personal view count
- */
-export async function getPersonalViewCount(): Promise<number> {
-  const params: ODataParams = {
-    $filter: D365_API_CONFIG.queries.personalViews.$filter,
-    $count: true,
-    $top: 1,
-  }
-
-  const response = await d365ApiClient.getCollection<UserQuery>(
-    D365_API_CONFIG.endpoints.personalViews,
-    params
-  )
-
-  return response['@odata.count'] || 0
 }

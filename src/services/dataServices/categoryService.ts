@@ -3,7 +3,6 @@
 import { d365ApiClient } from '../api/d365ApiClient'
 import { D365_API_CONFIG } from '../api/d365ApiConfig'
 import type { Category } from '@/data/mockData'
-import { getCanvasAppCount } from './canvasAppService'
 import { fetchCategoryCounts } from './componentCountService'
 
 /**
@@ -248,29 +247,16 @@ async function getWebResourceCount(): Promise<number> {
 }
 
 /**
- * Get app count (Model-driven apps)
+ * Get app count (Model-driven apps + Canvas apps)
  */
 async function getAppCount(): Promise<number> {
   try {
-    // Model-driven apps are stored in appmodule entity
-    const response = await d365ApiClient.getCollection<any>(
-      'appmodules',
-      {
-        $count: true,
-        $top: 1,
-        $filter: 'statecode eq 0', // Active apps only
-      }
-    )
-    const modelDrivenCount = response['@odata.count'] || 0
-    const canvasCount = await getCanvasAppCount()
-    return modelDrivenCount + canvasCount
+    // Use the updated getAppCount from appService which uses msdyn_solutioncomponentcountsummaries
+    const { getAppCount: getAppCountFromService } = await import('./appService')
+    return await getAppCountFromService()
   } catch (error) {
     console.warn('Failed to get app count:', error)
-    try {
-      return await getCanvasAppCount()
-    } catch {
-      return 0
-    }
+    return 0
   }
 }
 

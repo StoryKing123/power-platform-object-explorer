@@ -1,87 +1,99 @@
-// Web Resource Service - Fetch web resources from D365 Web API
+// Web Resource Service - Fetch web resources from msdyn_solutioncomponentsummaries
 
 import { d365ApiClient } from '../api/d365ApiClient'
 import { D365_API_CONFIG } from '../api/d365ApiConfig'
-import type { WebResource, ODataResponse, ODataParams } from '../api/d365ApiTypes'
-import { combineFilters, buildWebResourceSearchFilter } from '@/utils/odataHelper'
+import type { SolutionComponentSummary, ODataResponse, ODataParams } from '../api/d365ApiTypes'
+import { getDefaultSolutionId } from './searchService'
 
 /**
- * Fetch web resources with pagination
+ * 构建 WebResource 的 filter 条件
+ * componenttype=61 表示 WebResource
+ */
+function buildWebResourceFilter(solutionId: string, searchQuery?: string): string {
+  const webResourceTypeFilter = 'msdyn_componenttype eq 61'
+  const solutionFilter = `msdyn_solutionid eq ${solutionId}`
+  const baseFilter = `${webResourceTypeFilter} and ${solutionFilter}`
+
+  if (searchQuery && searchQuery.trim()) {
+    const sanitizedQuery = searchQuery.replace(/'/g, "''").trim()
+    const searchFilter = `(contains(msdyn_name, '${sanitizedQuery}') or contains(msdyn_displayname, '${sanitizedQuery}'))`
+    return `${baseFilter} and ${searchFilter}`
+  }
+
+  return baseFilter
+}
+
+/**
+ * Fetch web resources with pagination using msdyn_solutioncomponentsummaries
  */
 export async function fetchWebResources(
   pageSize: number = D365_API_CONFIG.pagination.defaultPageSize,
   skip?: number
-): Promise<ODataResponse<WebResource>> {
+): Promise<ODataResponse<SolutionComponentSummary>> {
+  const solutionId = await getDefaultSolutionId()
+
   const params: ODataParams = {
-    ...D365_API_CONFIG.queries.webResources,
+    $filter: buildWebResourceFilter(solutionId),
+    $orderby: 'msdyn_displayname asc',
     $top: pageSize,
   }
 
-  if (skip !== undefined && skip > 0) {
-    params.$skip = skip
-  }
-
-  return d365ApiClient.getCollection<WebResource>(
-    D365_API_CONFIG.endpoints.webResources,
-    params
+  return await d365ApiClient.getCollection<SolutionComponentSummary>(
+    D365_API_CONFIG.endpoints.solutionComponentSummaries,
+    params,
+    'v9.0'
   )
 }
 
 /**
- * Fetch web resource by ID
- */
-export async function fetchWebResourceById(webResourceId: string): Promise<WebResource> {
-  const params: ODataParams = {
-    $select: D365_API_CONFIG.queries.webResources.$select,
-  }
-
-  return d365ApiClient.getById<WebResource>(
-    D365_API_CONFIG.endpoints.webResources,
-    webResourceId,
-    params
-  )
-}
-
-/**
- * Search web resources by query string
+ * Search web resources by query string using msdyn_solutioncomponentsummaries
  */
 export async function searchWebResources(
   query: string,
   pageSize: number = D365_API_CONFIG.pagination.defaultPageSize,
   skip?: number
-): Promise<ODataResponse<WebResource>> {
-  const searchFilter = buildWebResourceSearchFilter(query)
+): Promise<ODataResponse<SolutionComponentSummary>> {
+  if (!query || query.trim().length < 2) {
+    return {
+      value: [],
+      '@odata.count': 0,
+    }
+  }
+
+  const solutionId = await getDefaultSolutionId()
 
   const params: ODataParams = {
-    $select: D365_API_CONFIG.queries.webResources.$select,
-    $filter: searchFilter,
-    $orderby: D365_API_CONFIG.queries.webResources.$orderby,
+    $filter: buildWebResourceFilter(solutionId, query),
+    $orderby: 'msdyn_displayname asc',
     $top: pageSize,
   }
 
-  if (skip !== undefined && skip > 0) {
-    params.$skip = skip
-  }
-
-  return d365ApiClient.getCollection<WebResource>(
-    D365_API_CONFIG.endpoints.webResources,
-    params
+  return await d365ApiClient.getCollection<SolutionComponentSummary>(
+    D365_API_CONFIG.endpoints.solutionComponentSummaries,
+    params,
+    'v9.0'
   )
 }
 
 /**
- * Get web resource count
+ * Get web resource count from msdyn_solutioncomponentcountsummaries
  */
 export async function getWebResourceCount(): Promise<number> {
-  const params: ODataParams = {
-    $count: true,
-    $top: 1,
+  try {
+    const solutionId = await getDefaultSolutionId()
+    const response = await d365ApiClient.getCollection<any>(
+      D365_API_CONFIG.endpoints.solutionComponentCountSummaries,
+      {
+        $select: 'msdyn_componenttype,msdyn_total',
+        $filter: `msdyn_solutionid eq ${solutionId} and msdyn_componenttype eq 61`,
+      },
+      'v9.0'
+    )
+
+    const webResourceRow = response.value?.find((row: any) => row.msdyn_componenttype === 61)
+    return webResourceRow?.msdyn_total || 0
+  } catch (error) {
+    console.warn('Failed to get web resource count:', error)
+    return 0
   }
-
-  const response = await d365ApiClient.getCollection<WebResource>(
-    D365_API_CONFIG.endpoints.webResources,
-    params
-  )
-
-  return response['@odata.count'] || 0
 }

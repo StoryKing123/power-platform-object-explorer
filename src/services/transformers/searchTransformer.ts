@@ -16,16 +16,29 @@ function getCategoryFromComponentType(componentType: number): string {
     91: 'plugins',
     92: 'plugins',
     61: 'webResources',
-    300: 'apps',
+    80: 'apps',    // Model-driven App
+    300: 'apps',   // Canvas App
     20: 'securityRoles',
+    9: 'choices',  // OptionSet (Choice)
   }
   return categoryMap[componentType] || 'unknown'
 }
 
 /**
  * Get component type label from component type code
+ * 根据 componentType 和 subtype 获取组件类型标签
  */
-function getComponentTypeLabel(componentType: number): string {
+function getComponentTypeLabel(componentType: number, subtype?: number | string | null): string {
+  // Canvas App 的 subtype 处理
+  if (componentType === 300) {
+    if (subtype === 0 || subtype === '0') {
+      return 'Classic Canvas App'
+    } else if (subtype === 4 || subtype === '4') {
+      return 'Modern Canvas App'
+    }
+    return 'Canvas App'
+  }
+
   const labelMap: Record<number, string> = {
     1: 'Entity',
     24: 'Form',
@@ -35,8 +48,10 @@ function getComponentTypeLabel(componentType: number): string {
     91: 'Plugin Assembly',
     92: 'Plugin Step',
     61: 'Web Resource',
-    300: 'App',
+    80: 'Model-driven App',
+    300: 'Canvas App',
     20: 'Security Role',
+    9: 'Choice',
   }
   return labelMap[componentType] || 'Component'
 }
@@ -61,10 +76,10 @@ export function transformSearchResult(result: SolutionComponentSummary): Compone
   return {
     id: result.msdyn_objectid,
     name: result.msdyn_displayname || result.msdyn_name,
-    type: getComponentTypeLabel(result.msdyn_componenttype),
+    type: getComponentTypeLabel(result.msdyn_componenttype, result.msdyn_subtype),
     category: getCategoryFromComponentType(result.msdyn_componenttype),
     status: 'active', // Search results don't include status, default to active
-    lastModified: 'N/A', // modifiedon not available in search results
+    lastModified: result.msdyn_modifiedon ? formatDate(result.msdyn_modifiedon) : 'N/A',
     description: result.msdyn_description || `${result.msdyn_componenttypename}: ${result.msdyn_name}`,
     solutions: [], // Not available in summary table
     metadata: {
@@ -76,6 +91,10 @@ export function transformSearchResult(result: SolutionComponentSummary): Compone
       primaryIdAttribute: result.msdyn_primaryidattribute,
       isManaged: result.msdyn_ismanaged,
       isCustom: result.msdyn_iscustom,
+      subtype: result.msdyn_subtype,
+      canvasAppUniqueId: result.msdyn_canvasappuniqueid,
+      workflowidunique: result.msdyn_workflowidunique,
+      solutionid: result.msdyn_solutionid,
       // Store original search result for reference
       _searchResult: result,
     },

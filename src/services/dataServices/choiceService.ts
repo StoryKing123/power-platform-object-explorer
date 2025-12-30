@@ -1,4 +1,4 @@
-// Form Service - Fetch forms from msdyn_solutioncomponentsummaries
+// Choice Service - Fetch choices (option sets) from msdyn_solutioncomponentsummaries
 
 import { d365ApiClient } from '../api/d365ApiClient'
 import { D365_API_CONFIG } from '../api/d365ApiConfig'
@@ -6,13 +6,13 @@ import type { SolutionComponentSummary, ODataResponse, ODataParams } from '../ap
 import { getDefaultSolutionId } from './searchService'
 
 /**
- * 构建 Form 的 filter 条件
- * componenttype=60 或 24 表示 Form
+ * 构建 Choice 的 filter 条件
+ * componenttype=9 表示 OptionSet (Choice)
  */
-function buildFormFilter(solutionId: string, searchQuery?: string): string {
-  const formTypeFilter = '(msdyn_componenttype eq 60 or msdyn_componenttype eq 24)'
+function buildChoiceFilter(solutionId: string, searchQuery?: string): string {
+  const choiceTypeFilter = 'msdyn_componenttype eq 9'
   const solutionFilter = `msdyn_solutionid eq ${solutionId}`
-  const baseFilter = `${formTypeFilter} and ${solutionFilter}`
+  const baseFilter = `${choiceTypeFilter} and ${solutionFilter}`
 
   if (searchQuery && searchQuery.trim()) {
     const sanitizedQuery = searchQuery.replace(/'/g, "''").trim()
@@ -24,16 +24,16 @@ function buildFormFilter(solutionId: string, searchQuery?: string): string {
 }
 
 /**
- * Fetch forms with pagination using msdyn_solutioncomponentsummaries
+ * Fetch choices with pagination using msdyn_solutioncomponentsummaries
  */
-export async function fetchForms(
+export async function fetchChoices(
   pageSize: number = D365_API_CONFIG.pagination.defaultPageSize,
   skip?: number
 ): Promise<ODataResponse<SolutionComponentSummary>> {
   const solutionId = await getDefaultSolutionId()
 
   const params: ODataParams = {
-    $filter: buildFormFilter(solutionId),
+    $filter: buildChoiceFilter(solutionId),
     $orderby: 'msdyn_displayname asc',
     $top: pageSize,
   }
@@ -46,9 +46,9 @@ export async function fetchForms(
 }
 
 /**
- * Search forms by query string using msdyn_solutioncomponentsummaries
+ * Search choices by query string using msdyn_solutioncomponentsummaries
  */
-export async function searchForms(
+export async function searchChoices(
   query: string,
   pageSize: number = D365_API_CONFIG.pagination.defaultPageSize,
   skip?: number
@@ -63,7 +63,7 @@ export async function searchForms(
   const solutionId = await getDefaultSolutionId()
 
   const params: ODataParams = {
-    $filter: buildFormFilter(solutionId, query),
+    $filter: buildChoiceFilter(solutionId, query),
     $orderby: 'msdyn_displayname asc',
     $top: pageSize,
   }
@@ -76,30 +76,25 @@ export async function searchForms(
 }
 
 /**
- * Get form count from msdyn_solutioncomponentcountsummaries
+ * Get choice count from msdyn_solutioncomponentcountsummaries
  */
-export async function getFormCount(): Promise<number> {
+export async function getChoiceCount(): Promise<number> {
   try {
     const solutionId = await getDefaultSolutionId()
     const response = await d365ApiClient.getCollection<any>(
       D365_API_CONFIG.endpoints.solutionComponentCountSummaries,
       {
         $select: 'msdyn_componenttype,msdyn_total',
-        $filter: `msdyn_solutionid eq ${solutionId} and (msdyn_componenttype eq 60 or msdyn_componenttype eq 24)`,
+        $filter: `msdyn_solutionid eq ${solutionId} and msdyn_componenttype eq 9`,
       },
       'v9.0'
     )
 
-    // Sum both componenttype 60 and 24
-    let count = 0
-    for (const row of response.value || []) {
-      if (row.msdyn_componenttype === 60 || row.msdyn_componenttype === 24) {
-        count += typeof row.msdyn_total === 'number' ? row.msdyn_total : 0
-      }
-    }
-    return count
+    // 获取 componenttype=9 (Choice) 的数量
+    const choiceRow = response.value?.find((row: any) => row.msdyn_componenttype === 9)
+    return choiceRow?.msdyn_total || 0
   } catch (error) {
-    console.warn('Failed to get form count:', error)
+    console.warn('Failed to get choice count:', error)
     return 0
   }
 }
