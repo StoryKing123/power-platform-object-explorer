@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import {
   Table,
   TableBody,
+  TableCell,
   TableHead,
   TableHeader,
   TableRow,
@@ -40,18 +41,48 @@ export const ComponentTable = ({
 }: ComponentTableProps) => {
   if (loading) {
     return (
-      <div className="space-y-2">
-        {[...Array(8)].map((_, i) => (
-          <Card key={i} className="p-3">
-            <div className="flex items-center gap-3">
-              <Skeleton className="h-10 w-10 rounded-lg" />
-              <div className="flex-1 space-y-2">
-                <Skeleton className="h-4 w-1/3" />
-                <Skeleton className="h-3 w-1/4" />
-              </div>
-            </div>
-          </Card>
-        ))}
+      <div className="overflow-hidden rounded-md border bg-background">
+        <Table className="table-fixed [&_th]:h-10 [&_th]:px-3 [&_td]:p-3">
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[240px]">Name</TableHead>
+              <TableHead className="w-[140px]">Type</TableHead>
+              <TableHead className="hidden md:table-cell">Description</TableHead>
+              <TableHead className="w-[110px] text-center">Status</TableHead>
+              <TableHead className="hidden lg:table-cell w-[150px]">Last Modified</TableHead>
+              <TableHead className="w-[44px]"></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {[...Array(8)].map((_, i) => (
+              <TableRow key={i}>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <Skeleton className="h-8 w-8 rounded-lg" />
+                    <Skeleton className="h-4 w-32" />
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <Skeleton className="h-5 w-16 rounded-full" />
+                </TableCell>
+                <TableCell className="hidden md:table-cell">
+                  <Skeleton className="h-4 w-full max-w-md" />
+                </TableCell>
+                <TableCell>
+                  <div className="flex justify-center">
+                    <Skeleton className="h-5 w-20 rounded-full" />
+                  </div>
+                </TableCell>
+                <TableCell className="hidden lg:table-cell">
+                  <Skeleton className="h-4 w-24" />
+                </TableCell>
+                <TableCell>
+                  <Skeleton className="h-8 w-8 rounded-md" />
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </div>
     )
   }
