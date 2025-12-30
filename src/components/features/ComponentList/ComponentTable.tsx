@@ -41,21 +41,26 @@ export const ComponentTable = ({
 }: ComponentTableProps) => {
   if (loading) {
     return (
-      <div className="overflow-hidden rounded-md border bg-background">
+      <div className="overflow-hidden rounded-xl border border-border/60 bg-card/95 backdrop-blur-sm shadow-lg shadow-black/5">
         <Table className="table-fixed [&_th]:h-10 [&_th]:px-3 [&_td]:p-3">
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[240px]">Name</TableHead>
-              <TableHead className="w-[140px]">Type</TableHead>
-              <TableHead className="hidden md:table-cell">Description</TableHead>
-              <TableHead className="w-[110px] text-center">Status</TableHead>
-              <TableHead className="hidden lg:table-cell w-[150px]">Last Modified</TableHead>
-              <TableHead className="w-[44px]"></TableHead>
+              <TableHead>Name</TableHead>
+              <TableHead className="w-[200px]">Type</TableHead>
+              <TableHead className="w-[140px] text-center">Status</TableHead>
+              <TableHead className="hidden lg:table-cell w-[180px]">Last Modified</TableHead>
+              <TableHead className="w-[60px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {[...Array(8)].map((_, i) => (
-              <TableRow key={i}>
+              <motion.tr
+                key={i}
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.05, duration: 0.3 }}
+                className="border-b border-border/50"
+              >
                 <TableCell>
                   <div className="flex items-center gap-2">
                     <Skeleton className="h-8 w-8 rounded-lg" />
@@ -64,9 +69,6 @@ export const ComponentTable = ({
                 </TableCell>
                 <TableCell>
                   <Skeleton className="h-5 w-16 rounded-full" />
-                </TableCell>
-                <TableCell className="hidden md:table-cell">
-                  <Skeleton className="h-4 w-full max-w-md" />
                 </TableCell>
                 <TableCell>
                   <div className="flex justify-center">
@@ -79,7 +81,7 @@ export const ComponentTable = ({
                 <TableCell>
                   <Skeleton className="h-8 w-8 rounded-md" />
                 </TableCell>
-              </TableRow>
+              </motion.tr>
             ))}
           </TableBody>
         </Table>
@@ -118,27 +120,27 @@ export const ComponentTable = ({
   return (
     <>
       <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.3 }}
-        className="overflow-hidden rounded-md border bg-background"
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+        className="overflow-hidden rounded-xl border border-border/60 bg-card/95 backdrop-blur-sm shadow-lg shadow-black/5"
       >
         <Table className="table-fixed [&_th]:h-10 [&_th]:px-3 [&_td]:p-3">
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[240px]">Name</TableHead>
-              <TableHead className="w-[140px]">Type</TableHead>
-              <TableHead className="hidden md:table-cell">Description</TableHead>
-              <TableHead className="w-[110px] text-center">Status</TableHead>
-              <TableHead className="hidden lg:table-cell w-[150px]">Last Modified</TableHead>
-              <TableHead className="w-[44px]"></TableHead>
+              <TableHead>Name</TableHead>
+              <TableHead className="w-[200px]">Type</TableHead>
+              <TableHead className="w-[140px] text-center">Status</TableHead>
+              <TableHead className="hidden lg:table-cell w-[180px]">Last Modified</TableHead>
+              <TableHead className="w-[60px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {components.map((component) => (
+            {components.map((component, index) => (
               <ComponentTableRow
                 key={component.id}
                 component={component}
+                index={index}
                 onViewDetails={onViewDetails}
               />
             ))}
