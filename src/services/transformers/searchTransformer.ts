@@ -87,7 +87,7 @@ export function transformSearchResult(result: SolutionComponentSummary): Compone
       componentTypeName: result.msdyn_componenttypename,
       objectId: result.msdyn_objectid,
       objectTypeCode: result.msdyn_objecttypecode,
-      schemaName: result.msdyn_schemaname,
+      schemaName: result.msdyn_schemaname ?? undefined,
       primaryIdAttribute: result.msdyn_primaryidattribute,
       isManaged: result.msdyn_ismanaged,
       isCustom: result.msdyn_iscustom,
@@ -95,6 +95,7 @@ export function transformSearchResult(result: SolutionComponentSummary): Compone
       canvasAppUniqueId: result.msdyn_canvasappuniqueid,
       workflowidunique: result.msdyn_workflowidunique,
       solutionid: result.msdyn_solutionid,
+      msdyn_name: result.msdyn_name,
       // Store original search result for reference
       _searchResult: result,
     },

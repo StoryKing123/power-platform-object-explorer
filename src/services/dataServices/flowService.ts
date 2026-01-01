@@ -2,7 +2,7 @@
 
 import { d365ApiClient } from '../api/d365ApiClient'
 import { D365_API_CONFIG } from '../api/d365ApiConfig'
-import type { SolutionComponentSummary, ODataResponse, ODataParams } from '../api/d365ApiTypes'
+import type { SolutionComponentSummary, ODataResponse, ODataParams, Workflow } from '../api/d365ApiTypes'
 import { getDefaultSolutionId } from './searchService'
 
 /**
@@ -98,5 +98,30 @@ export async function getFlowCount(): Promise<number> {
   } catch (error) {
     console.warn('Failed to get flow count:', error)
     return 0
+  }
+}
+
+/**
+ * Fetch individual flow details by workflowidunique
+ * Used in detail dialog to get complete flow information including modernflowtype
+ */
+export async function fetchFlowDetails(workflowidunique: string): Promise<Workflow | null> {
+  try {
+    const params: ODataParams = {
+      $select: 'workflowid,workflowidunique,name,type,category,primaryentity,description,statecode,statuscode,ismanaged,iscustomizable,createdon,modifiedon,modernflowtype,clientdata,_ownerid_value,_owninguser_value,_owningteam_value',
+      $expand: 'owninguser($select=fullname),owningteam($select=name)',
+      $filter: `workflowidunique eq ${workflowidunique}`,
+    }
+
+    const response = await d365ApiClient.getCollection<Workflow>(
+      D365_API_CONFIG.endpoints.workflows,
+      params,
+      'v9.2'
+    )
+
+    return response.value?.[0] || null
+  } catch (error) {
+    console.error('Failed to fetch flow details:', error)
+    throw error
   }
 }

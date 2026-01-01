@@ -330,14 +330,10 @@ export function transformCanvasApp(app: CanvasApp): Component {
 
 /**
  * Get flow type from clientdata or modernflowtype
+ * 优先使用clientdata判断（更可靠），modernflowtype作为fallback
  */
-function getFlowType(flow: Workflow): string {
-  // Try modernflowtype first (more reliable)
-  if (flow.modernflowtype !== undefined && flow.modernflowtype !== null) {
-    return MODERN_FLOW_TYPES[flow.modernflowtype] || 'Cloud Flow'
-  }
-
-  // Parse clientdata to determine flow type
+export function getFlowType(flow: Workflow): string {
+  // Parse clientdata to determine flow type (优先使用，更准确)
   if (flow.clientdata) {
     try {
       const clientData = JSON.parse(flow.clientdata)
@@ -354,14 +350,24 @@ function getFlowType(flow: Workflow): string {
             const triggerType = (firstTrigger as any)?.type?.toLowerCase()
             const triggerKind = (firstTrigger as any)?.kind?.toLowerCase()
 
-            // Check for different trigger types
-            if (triggerType === 'request' && triggerKind?.includes('powerapps')) {
-              return 'Instant Flow'
-            } else if (triggerType === 'request' || triggerKind === 'button') {
-              return 'Instant Flow'
-            } else if (triggerType === 'recurrence') {
+            // Recurrence trigger → Scheduled Flow
+            if (triggerType === 'recurrence') {
               return 'Scheduled Flow'
-            } else if (triggerType?.includes('dataverse') || triggerType?.includes('dynamics')) {
+            }
+            // Request trigger with PowerApp kind → Instant Flow
+            else if (triggerType === 'request' && triggerKind?.includes('powerapps')) {
+              return 'Instant Flow'
+            }
+            // Request or Button trigger → Instant Flow
+            else if (triggerType === 'request' || triggerKind === 'button') {
+              return 'Instant Flow'
+            }
+            // OpenApiConnectionWebhook → Automated Flow (Dataverse/CDS triggers)
+            else if (triggerType === 'openapiconnectionwebhook') {
+              return 'Automated Flow'
+            }
+            // Other Dataverse/Dynamics triggers → Automated Flow
+            else if (triggerType?.includes('dataverse') || triggerType?.includes('dynamics')) {
               return 'Automated Flow'
             }
           }
@@ -370,6 +376,11 @@ function getFlowType(flow: Workflow): string {
     } catch (error) {
       console.warn('Failed to parse flow clientdata:', error)
     }
+  }
+
+  // Fallback to modernflowtype if clientdata parsing failed
+  if (flow.modernflowtype !== undefined && flow.modernflowtype !== null) {
+    return MODERN_FLOW_TYPES[flow.modernflowtype] || 'Cloud Flow'
   }
 
   return 'Cloud Flow'

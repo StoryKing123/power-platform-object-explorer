@@ -1,23 +1,22 @@
 import { useState, useEffect, useMemo } from 'react'
-import { motion } from 'framer-motion'
-import { Edit, Download, Database, Package, Loader2, ExternalLink } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Database, Package, Loader2, ExternalLink } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
-  DialogFooter,
   DialogHeader,
   DialogTitle
 } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Separator } from '@/components/ui/separator'
 import { type Component, type Solution } from '@/data/mockData'
-import { getIconComponent, getStatusVariant } from '@/utils/componentHelpers'
+import { getIconComponent, getStatusVariant, isFlow } from '@/utils/componentHelpers'
 import { formatInstalledOn } from '@/utils/formatters'
 import { fetchComponentSolutions } from '@/services/dataServices/solutionService'
+import { fetchFlowDetails } from '@/services/dataServices/flowService'
 import { getEnvironmentId } from '@/services/dataServices/environmentService'
+import { getFlowType } from '@/services/transformers/componentTransformer'
+import type { Workflow } from '@/services/api/d365ApiTypes'
 import { toast } from 'sonner'
 
 interface ComponentDetailDialogProps {
@@ -37,6 +36,8 @@ export const ComponentDetailDialog = ({
   const [currentTab, setCurrentTab] = useState('overview')
   const [componentSolutions, setComponentSolutions] = useState<Solution[]>([])
   const [loadingSolutions, setLoadingSolutions] = useState(false)
+  const [flowDetails, setFlowDetails] = useState<Workflow | null>(null)
+  const [loadingFlowDetails, setLoadingFlowDetails] = useState(false)
 
   const sortedComponentSolutions = useMemo(() => {
     const getInstalledTime = (installedOn?: string) => {
@@ -98,6 +99,35 @@ export const ComponentDetailDialog = ({
     }
   }, [currentTab, component])
 
+  // Fetch flow details when component is a flow
+  useEffect(() => {
+    if (!component || !isFlow(component)) {
+      setFlowDetails(null)
+      return
+    }
+
+    const workflowidunique = component.metadata?.workflowidunique
+    if (!workflowidunique) {
+      console.warn('Flow component missing workflowidunique in metadata')
+      return
+    }
+
+    setLoadingFlowDetails(true)
+    fetchFlowDetails(workflowidunique)
+      .then(workflow => {
+        setFlowDetails(workflow)
+      })
+      .catch(error => {
+        console.error('Failed to fetch flow details:', error)
+        toast.error('Failed to load flow details', {
+          description: error instanceof Error ? error.message : 'Could not retrieve flow type information'
+        })
+      })
+      .finally(() => {
+        setLoadingFlowDetails(false)
+      })
+  }, [component])
+
   useEffect(() => {
     if (component) {
       setComponentSolutions(component.solutions || [])
@@ -113,25 +143,21 @@ export const ComponentDetailDialog = ({
         <ScrollArea className="max-h-[85vh]">
           <div className="p-6">
             <DialogHeader>
-              <div className="flex items-center gap-4">
-                <motion.div
-                  className="rounded-xl bg-gradient-to-br from-primary via-fuchsia-500 to-cyan-400 p-4 shadow-xl shadow-primary/15"
-                  whileHover={{ rotate: 6, scale: 1.01 }}
-                  transition={{ duration: 0.25 }}
-                >
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg border border-primary/20 bg-primary/10 flex items-center justify-center">
                   {(() => {
                     const Icon = getIconComponent(
                       categories.find(c => c.id === component.category)?.icon || 'LayoutGrid'
                     )
-                    return <Icon className="h-8 w-8 text-white" />
+                    return <Icon className="h-5 w-5 text-primary" />
                   })()}
-                </motion.div>
+                </div>
                 <div className="min-w-0">
-                  <DialogTitle className="truncate text-2xl tracking-tight">{component.name}</DialogTitle>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    <Badge variant="secondary">{component.type}</Badge>
-                    <Badge variant="outline">{component.category}</Badge>
-                    <Badge variant={getStatusVariant(component.status)}>
+                  <DialogTitle className="truncate text-lg tracking-tight">{component.name}</DialogTitle>
+                  <div className="mt-1 flex flex-wrap gap-1.5">
+                    <Badge variant="secondary" className="text-xs px-2 py-0.5">{component.type}</Badge>
+                    <Badge variant="outline" className="text-xs px-2 py-0.5">{component.category}</Badge>
+                    <Badge variant={getStatusVariant(component.status)} className="text-xs px-2 py-0.5">
                       {component.status}
                     </Badge>
                   </div>
@@ -149,41 +175,58 @@ export const ComponentDetailDialog = ({
 
               <TabsContent value="overview" className="space-y-4 mt-4">
                 <div>
-                  <h3 className="mb-2 font-semibold text-foreground">Description</h3>
-                  <p className="text-sm text-muted-foreground">{component.description}</p>
+                  <h3 className="mb-2 text-sm font-medium text-muted-foreground">Description</h3>
+                  <p className="text-sm text-foreground">{component.description}</p>
                 </div>
-                <Separator />
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <h4 className="mb-1 text-sm font-medium text-foreground">Type</h4>
-                    <p className="text-sm text-muted-foreground">{component.type}</p>
+
+                <div className="space-y-0 text-sm mt-4">
+                  <div className="flex justify-between py-2 border-b border-border/40">
+                    <span className="text-muted-foreground">Type</span>
+                    <span className="font-medium text-foreground">{component.type}</span>
                   </div>
-                  <div>
-                    <h4 className="mb-1 text-sm font-medium text-foreground">Category</h4>
-                    <p className="text-sm text-muted-foreground">{component.category}</p>
+                  <div className="flex justify-between py-2 border-b border-border/40">
+                    <span className="text-muted-foreground">Category</span>
+                    <span className="font-medium text-foreground">{component.category}</span>
                   </div>
-                  <div>
-                    <h4 className="mb-1 text-sm font-medium text-foreground">Status</h4>
-                    <Badge variant={getStatusVariant(component.status)}>
+                  <div className="flex justify-between py-2 border-b border-border/40">
+                    <span className="text-muted-foreground">Status</span>
+                    <Badge variant={getStatusVariant(component.status)} className="text-xs px-2 py-0.5">
                       {component.status}
                     </Badge>
                   </div>
-                  <div>
-                    <h4 className="mb-1 text-sm font-medium text-foreground">Last Modified</h4>
-                    <p className="text-sm text-muted-foreground">{component.lastModified}</p>
+                  <div className="flex justify-between py-2 border-b border-border/40">
+                    <span className="text-muted-foreground">Last Modified</span>
+                    <span className="font-medium text-foreground">{component.lastModified}</span>
                   </div>
+                  {isFlow(component) && (
+                    <div className="flex justify-between py-2 border-b border-border/40">
+                      <span className="text-muted-foreground">Flow Type</span>
+                      {loadingFlowDetails ? (
+                        <div className="flex items-center gap-2">
+                          <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                          <span className="text-sm text-muted-foreground">Loading...</span>
+                        </div>
+                      ) : flowDetails ? (
+                        <span className="font-medium text-foreground">
+                          {getFlowType(flowDetails)}
+                        </span>
+                      ) : (
+                        <span className="font-medium text-foreground">Cloud Flow</span>
+                      )}
+                    </div>
+                  )}
                 </div>
               </TabsContent>
 
               <TabsContent value="properties" className="space-y-4 mt-4">
-                <div className="space-y-3">
+                <div className="space-y-0">
                   {component.metadata ? (
                     Object.entries(component.metadata).map(([key, value]) => (
                       <div
                         key={key}
-                        className="flex items-center justify-between rounded-xl border border-border/50 bg-muted/20 p-3"
+                        className="flex items-center justify-between py-2 border-b border-border/40"
                       >
-                        <span className="font-medium text-foreground">{key}</span>
+                        <span className="text-sm font-medium text-foreground">{key}</span>
                         <span className="max-w-[60%] truncate text-right text-sm text-muted-foreground">
                           {typeof value === 'boolean' ? (value ? 'Yes' : 'No') : String(value || 'N/A')}
                         </span>
@@ -199,11 +242,11 @@ export const ComponentDetailDialog = ({
                 <p className="text-sm text-muted-foreground">
                   This component has dependencies on the following items:
                 </p>
-                <div className="space-y-2">
+                <div className="space-y-0">
                   {['System User Entity', 'Security Role', 'Business Unit'].map((dep) => (
                     <div
                       key={dep}
-                      className="flex items-center gap-3 rounded-xl border border-border/50 bg-muted/20 p-3"
+                      className="flex items-center gap-3 py-2 border-b border-border/40"
                     >
                       <Database className="h-4 w-4 text-primary" />
                       <span className="text-sm text-foreground">{dep}</span>
@@ -219,14 +262,14 @@ export const ComponentDetailDialog = ({
                     <span className="ml-3 text-sm text-muted-foreground">Loading solutions...</span>
                   </div>
                 ) : componentSolutions && componentSolutions.length > 0 ? (
-                  <div className="space-y-2">
-                    <p className="mb-3 text-sm text-muted-foreground">
+                  <div className="space-y-1.5">
+                    <p className="mb-2 text-sm text-muted-foreground">
                       This component is included in {componentSolutions.length} solution{componentSolutions.length > 1 ? 's' : ''}:
                     </p>
                     {sortedComponentSolutions.map((solution) => (
                       <div
                         key={solution.id}
-                        className="cursor-pointer rounded-xl border border-border/50 bg-muted/15 p-3 transition-colors hover:border-primary/40 hover:bg-muted/25"
+                        className="cursor-pointer rounded-lg border border-border/50 bg-muted/15 p-2.5 transition-colors hover:border-primary/40 hover:bg-muted/25"
                         role="button"
                         tabIndex={0}
                         title="Open solution in Power Platform"
@@ -251,7 +294,7 @@ export const ComponentDetailDialog = ({
                                 </Badge>
                               )}
                             </div>
-                            <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                            <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
                               <span className="inline-flex items-center gap-1">
                                 <span className="font-medium text-muted-foreground">Name</span>
                                 <span className="font-mono">{solution.name}</span>
@@ -289,17 +332,6 @@ export const ComponentDetailDialog = ({
                 )}
               </TabsContent>
             </Tabs>
-
-            <DialogFooter className="mt-6">
-              <Button variant="outline">
-                <Download className="h-4 w-4 mr-2" />
-                Export
-              </Button>
-              <Button>
-                <Edit className="h-4 w-4 mr-2" />
-                Edit Component
-              </Button>
-            </DialogFooter>
           </div>
         </ScrollArea>
       </DialogContent>

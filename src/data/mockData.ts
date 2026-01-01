@@ -32,6 +32,7 @@ export interface Component {
     objectTypeCode?: number | string
     isManaged?: boolean
     isCustomizable?: boolean
+    msdyn_name?: string
     [key: string]: any
   }
 }

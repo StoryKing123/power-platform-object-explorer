@@ -1,4 +1,4 @@
-import { Eye, MoreVertical, Play, ExternalLink } from 'lucide-react'
+import { Eye, MoreVertical, Play, ExternalLink, Database } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Clock } from 'lucide-react'
 import { type Component } from '@/data/mockData'
-import { getStatusVariant, normalizeGuid, isCanvasApp, isModelDrivenApp } from '@/utils/componentHelpers'
+import { getStatusVariant, normalizeGuid, isCanvasApp, isModelDrivenApp, isEntity, getEntityMetadataWebResourceName } from '@/utils/componentHelpers'
 import { getEnvironmentId } from '@/services/dataServices/environmentService'
 import { getDefaultSolutionId } from '@/services/dataServices/searchService'
 import { toast } from 'sonner'
@@ -156,6 +156,27 @@ export const ComponentTableRow = ({ component, index, onViewDetails }: Component
     window.open(flowEditorUrl, '_blank')
   }
 
+  const handleViewMetadata = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+
+    const logicName = component.metadata?.msdyn_name
+    if (!logicName) {
+      toast.error('Unable to open metadata: entity logic name not found')
+      return
+    }
+
+    const webResourceName = getEntityMetadataWebResourceName()
+    if (!webResourceName) {
+      toast.error('Entity Metadata web resource not configured')
+      return
+    }
+
+    const metadataUrl = new URL(`/WebResources/${webResourceName}`, window.location.origin)
+    metadataUrl.searchParams.set('logicname', logicName)
+    window.open(metadataUrl.toString(), '_blank', 'noopener,noreferrer')
+  }
+
   const isFlow = component.category === 'flows' || component.type.toLowerCase().includes('flow')
 
   return (
@@ -215,6 +236,12 @@ export const ComponentTableRow = ({ component, index, onViewDetails }: Component
               <Eye className="h-4 w-4 mr-2" />
               View Details
             </DropdownMenuItem>
+            {isEntity(component) && (
+              <DropdownMenuItem onClick={handleViewMetadata}>
+                <Database className="h-4 w-4 mr-2" />
+                View Metadata in new tab
+              </DropdownMenuItem>
+            )}
             {isModelDrivenApp(component) && (
               <>
                 <DropdownMenuItem onClick={handlePlayModelDrivenApp}>
