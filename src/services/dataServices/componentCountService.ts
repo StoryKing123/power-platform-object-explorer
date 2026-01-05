@@ -9,15 +9,13 @@ import { cacheService } from '../cacheService'
 export type CategoryCountId =
   | 'all'
   | 'entities'
-  | 'forms'
-  | 'views'
-  | 'workflows'
-  | 'plugins'
-  | 'webresources'
   | 'apps'
   | 'flows'
   | 'securityroles'
   | 'choices'
+  | 'connectionreferences'
+  | 'connectors'
+  | 'environmentvariables'
 
 export type CategoryCounts = Record<CategoryCountId, number>
 
@@ -40,32 +38,6 @@ function computeCategoryCounts(rows: SolutionComponentCountSummary[]): CategoryC
     return sum + (row.msdyn_componenttype === 1 || logicalName(row) === 'entity' ? safeNumber(row.msdyn_total) : 0)
   }, 0)
 
-  const forms = rows.reduce((sum, row) => {
-    const isForm = row.msdyn_componenttype === 60 || row.msdyn_componenttype === 24 || logicalName(row) === 'systemform'
-    return sum + (isForm ? safeNumber(row.msdyn_total) : 0)
-  }, 0)
-
-  const views = rows.reduce((sum, row) => {
-    const name = logicalName(row)
-    const isView = row.msdyn_componenttype === 26 || name === 'savedquery' || name === 'userquery'
-    return sum + (isView ? safeNumber(row.msdyn_total) : 0)
-  }, 0)
-
-  const plugins = rows.reduce((sum, row) => {
-    const name = logicalName(row)
-    const isPlugin =
-      row.msdyn_componenttype === 91 ||
-      row.msdyn_componenttype === 92 ||
-      name === 'pluginassembly' ||
-      name === 'sdkmessageprocessingstep'
-    return sum + (isPlugin ? safeNumber(row.msdyn_total) : 0)
-  }, 0)
-
-  const webresources = rows.reduce((sum, row) => {
-    const isWebResource = row.msdyn_componenttype === 61 || logicalName(row) === 'webresource'
-    return sum + (isWebResource ? safeNumber(row.msdyn_total) : 0)
-  }, 0)
-
   const apps = rows.reduce((sum, row) => {
     const name = logicalName(row)
     const isApp = row.msdyn_componenttype === 80 || row.msdyn_componenttype === 300 || name === 'appmodule' || name === 'canvasapp'
@@ -82,37 +54,47 @@ function computeCategoryCounts(rows: SolutionComponentCountSummary[]): CategoryC
     return sum + (isOptionSet ? safeNumber(row.msdyn_total) : 0)
   }, 0)
 
-  const { workflows, flows } = rows.reduce(
-    (acc, row) => {
-      const isWorkflow = row.msdyn_componenttype === 29 || logicalName(row) === 'workflow'
-      if (!isWorkflow) return acc
+  const connectionreferences = rows.reduce((sum, row) => {
+    const isConnectionRef = row.msdyn_componenttype === 10150 || logicalName(row) === 'connectionreference'
+    return sum + (isConnectionRef ? safeNumber(row.msdyn_total) : 0)
+  }, 0)
 
-      const total = safeNumber(row.msdyn_total)
-      if (row.msdyn_workflowcategory === 5) {
-        acc.flows += total
-      } else {
-        acc.workflows += total
-      }
+  const connectors = rows.reduce((sum, row) => {
+    const isConnector = row.msdyn_componenttype === 372 || logicalName(row) === 'connector'
+    return sum + (isConnector ? safeNumber(row.msdyn_total) : 0)
+  }, 0)
 
-      return acc
-    },
-    { workflows: 0, flows: 0 }
-  )
+  const environmentvariables = rows.reduce((sum, row) => {
+    const name = logicalName(row)
+    const isEnvVar = row.msdyn_componenttype === 380 || row.msdyn_componenttype === 381 || name === 'environmentvariabledefinition' || name === 'environmentvariablevalue'
+    return sum + (isEnvVar ? safeNumber(row.msdyn_total) : 0)
+  }, 0)
 
-  const all = entities + forms + views + workflows + plugins + webresources + apps + flows + securityroles + choices
+  // Only count flows (category 5 workflows)
+  const flows = rows.reduce((sum, row) => {
+    const isWorkflow = row.msdyn_componenttype === 29 || logicalName(row) === 'workflow'
+    if (!isWorkflow) return sum
+
+    const total = safeNumber(row.msdyn_total)
+    if (row.msdyn_workflowcategory === 5) {
+      return sum + total
+    }
+
+    return sum
+  }, 0)
+
+  const all = entities + apps + flows + securityroles + choices + connectionreferences + connectors + environmentvariables
 
   return {
     all,
     entities,
-    forms,
-    views,
-    workflows,
-    plugins,
-    webresources,
     apps,
     flows,
     securityroles,
     choices,
+    connectionreferences,
+    connectors,
+    environmentvariables,
   }
 }
 

@@ -54,15 +54,13 @@ export interface Activity {
 export const categories: Category[] = [
   { id: 'all', name: 'All Components', icon: 'LayoutGrid', count: 156 },
   { id: 'entities', name: 'Entities', icon: 'Database', count: 42 },
-  { id: 'forms', name: 'Forms', icon: 'FileText', count: 28 },
-  { id: 'views', name: 'Views', icon: 'Table2', count: 35 },
-  { id: 'workflows', name: 'Workflows', icon: 'GitBranch', count: 24 },
-  { id: 'plugins', name: 'Plugins', icon: 'Puzzle', count: 18 },
-  { id: 'webresources', name: 'Web Resources', icon: 'Globe', count: 9 },
   { id: 'apps', name: 'Apps', icon: 'Package', count: 15 },
   { id: 'flows', name: 'Flows', icon: 'Zap', count: 32 },
   { id: 'securityroles', name: 'Security Roles', icon: 'Shield', count: 12 },
   { id: 'choices', name: 'Choices', icon: 'List', count: 45 },
+  { id: 'connectionreferences', name: 'Connection References', icon: 'Link', count: 8 },
+  { id: 'connectors', name: 'Custom Connectors', icon: 'Plug', count: 5 },
+  { id: 'environmentvariables', name: 'Environment Variables', icon: 'Variable', count: 12 },
 ]
 
 export const components: Component[] = [

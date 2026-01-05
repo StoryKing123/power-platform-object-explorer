@@ -10,15 +10,13 @@ import { d365ApiClient } from '@/services/api/d365ApiClient'
 
 // Import services
 import { fetchEntities, searchEntities, getEntityCount } from '@/services/dataServices/entityService'
-import { fetchForms, searchForms, getFormCount } from '@/services/dataServices/formService'
-import { fetchAllViews, searchSystemViews, searchPersonalViews, getViewCount } from '@/services/dataServices/viewService'
-import { fetchWorkflows, searchWorkflows, getWorkflowCount } from '@/services/dataServices/workflowService'
-import { fetchAllPlugins, searchPluginAssemblies, searchPluginSteps, getPluginCount } from '@/services/dataServices/pluginService'
-import { fetchWebResources, searchWebResources, getWebResourceCount } from '@/services/dataServices/webResourceService'
 import { fetchApps, searchApps, getAppCount } from '@/services/dataServices/appService'
 import { fetchFlows, searchFlows, getFlowCount } from '@/services/dataServices/flowService'
 import { fetchSecurityRoles, searchSecurityRoles, getSecurityRoleCount } from '@/services/dataServices/securityRoleService'
 import { fetchChoices, searchChoices, getChoiceCount } from '@/services/dataServices/choiceService'
+import { fetchConnectionReferences, searchConnectionReferences, getConnectionReferenceCount } from '@/services/dataServices/connectionReferenceService'
+import { fetchConnectors, searchConnectors, getConnectorCount } from '@/services/dataServices/connectorService'
+import { fetchEnvironmentVariables, searchEnvironmentVariables, getEnvironmentVariableCount } from '@/services/dataServices/environmentVariableService'
 import { searchComponents, getDefaultSolutionId } from '@/services/dataServices/searchService'
 import { getCategoryCount as getSummaryCategoryCount } from '@/services/dataServices/componentCountService'
 import type { CategoryCountId } from '@/services/dataServices/componentCountService'
@@ -115,83 +113,6 @@ export function useComponentData(
             break
           }
 
-          case 'forms': {
-            if (searchQuery) {
-              const response = await searchForms(searchQuery, pageSize, skip)
-              components = response.value.map(transformSearchResult)
-              setHasMore(!!response['@odata.nextLink'])
-            } else {
-              const response = await fetchForms(pageSize, skip)
-              components = response.value.map(transformSearchResult)
-              setHasMore(!!response['@odata.nextLink'])
-            }
-            break
-          }
-
-          case 'views': {
-            if (searchQuery) {
-              const [systemResponse, personalResponse] = await Promise.all([
-                searchSystemViews(searchQuery, Math.floor(pageSize / 2), skip),
-                searchPersonalViews(searchQuery, Math.floor(pageSize / 2), skip),
-              ])
-              components = [
-                ...systemResponse.value.map(transformSearchResult),
-                ...personalResponse.value.map(transformSearchResult),
-              ]
-              setHasMore(!!systemResponse['@odata.nextLink'] || !!personalResponse['@odata.nextLink'])
-            } else {
-              const response = await fetchAllViews(pageSize, skip)
-              components = response.value.map(transformSearchResult)
-              setHasMore(!!response['@odata.nextLink'])
-            }
-            break
-          }
-
-          case 'workflows': {
-            if (searchQuery) {
-              const response = await searchWorkflows(searchQuery, pageSize, skip)
-              components = response.value.map(transformSearchResult)
-              setHasMore(!!response['@odata.nextLink'])
-            } else {
-              const response = await fetchWorkflows(pageSize, skip)
-              components = response.value.map(transformSearchResult)
-              setHasMore(!!response['@odata.nextLink'])
-            }
-            break
-          }
-
-          case 'plugins': {
-            if (searchQuery) {
-              const [assembliesResponse, stepsResponse] = await Promise.all([
-                searchPluginAssemblies(searchQuery, Math.floor(pageSize / 2), skip),
-                searchPluginSteps(searchQuery, Math.floor(pageSize / 2), skip),
-              ])
-              components = [
-                ...assembliesResponse.value.map(transformSearchResult),
-                ...stepsResponse.value.map(transformSearchResult),
-              ]
-              setHasMore(!!assembliesResponse['@odata.nextLink'] || !!stepsResponse['@odata.nextLink'])
-            } else {
-              const response = await fetchAllPlugins(pageSize, skip)
-              components = response.value.map(transformSearchResult)
-              setHasMore(!!response['@odata.nextLink'])
-            }
-            break
-          }
-
-          case 'webresources': {
-            if (searchQuery) {
-              const response = await searchWebResources(searchQuery, pageSize, skip)
-              components = response.value.map(transformSearchResult)
-              setHasMore(!!response['@odata.nextLink'])
-            } else {
-              const response = await fetchWebResources(pageSize, skip)
-              components = response.value.map(transformSearchResult)
-              setHasMore(!!response['@odata.nextLink'])
-            }
-            break
-          }
-
           case 'apps': {
             if (searchQuery) {
               const response = await searchApps(searchQuery, pageSize, skip)
@@ -244,6 +165,45 @@ export function useComponentData(
             break
           }
 
+          case 'connectionreferences': {
+            if (searchQuery) {
+              const response = await searchConnectionReferences(searchQuery, pageSize, skip)
+              components = response.value.map(transformSearchResult)
+              setHasMore(!!response['@odata.nextLink'])
+            } else {
+              const response = await fetchConnectionReferences(pageSize, skip)
+              components = response.value.map(transformSearchResult)
+              setHasMore(!!response['@odata.nextLink'])
+            }
+            break
+          }
+
+          case 'connectors': {
+            if (searchQuery) {
+              const response = await searchConnectors(searchQuery, pageSize, skip)
+              components = response.value.map(transformSearchResult)
+              setHasMore(!!response['@odata.nextLink'])
+            } else {
+              const response = await fetchConnectors(pageSize, skip)
+              components = response.value.map(transformSearchResult)
+              setHasMore(!!response['@odata.nextLink'])
+            }
+            break
+          }
+
+          case 'environmentvariables': {
+            if (searchQuery) {
+              const response = await searchEnvironmentVariables(searchQuery, pageSize, skip)
+              components = response.value.map(transformSearchResult)
+              setHasMore(!!response['@odata.nextLink'])
+            } else {
+              const response = await fetchEnvironmentVariables(pageSize, skip)
+              components = response.value.map(transformSearchResult)
+              setHasMore(!!response['@odata.nextLink'])
+            }
+            break
+          }
+
           default:
             components = []
         }
@@ -270,15 +230,13 @@ export function useComponentData(
       const summarySupportedCategories: CategoryCountId[] = [
         'all',
         'entities',
-        'forms',
-        'views',
-        'workflows',
-        'plugins',
-        'webresources',
         'apps',
         'flows',
         'securityroles',
         'choices',
+        'connectionreferences',
+        'connectors',
+        'environmentvariables',
       ]
 
       const isSummarySupportedCategory = (value: string): value is CategoryCountId =>
@@ -302,21 +260,6 @@ export function useComponentData(
         case 'entities':
           count = await getEntityCount()
           break
-        case 'forms':
-          count = await getFormCount()
-          break
-        case 'views':
-          count = await getViewCount()
-          break
-        case 'workflows':
-          count = await getWorkflowCount()
-          break
-        case 'plugins':
-          count = await getPluginCount()
-          break
-        case 'webresources':
-          count = await getWebResourceCount()
-          break
         case 'apps':
           count = await getAppCount()
           break
@@ -329,21 +272,28 @@ export function useComponentData(
         case 'choices':
           count = await getChoiceCount()
           break
+        case 'connectionreferences':
+          count = await getConnectionReferenceCount()
+          break
+        case 'connectors':
+          count = await getConnectorCount()
+          break
+        case 'environmentvariables':
+          count = await getEnvironmentVariableCount()
+          break
         case 'all': {
           // Sum all counts
-          const [entities, forms, views, workflows, plugins, webResources, apps, flows, securityRoles, choices] = await Promise.all([
+          const [entities, apps, flows, securityRoles, choices, connectionReferences, connectors, environmentVariables] = await Promise.all([
             getEntityCount(),
-            getFormCount(),
-            getViewCount(),
-            getWorkflowCount(),
-            getPluginCount(),
-            getWebResourceCount(),
             getAppCount(),
             getFlowCount(),
             getSecurityRoleCount(),
             getChoiceCount(),
+            getConnectionReferenceCount(),
+            getConnectorCount(),
+            getEnvironmentVariableCount(),
           ])
-          count = entities + forms + views + workflows + plugins + webResources + apps + flows + securityRoles + choices
+          count = entities + apps + flows + securityRoles + choices + connectionReferences + connectors + environmentVariables
           break
         }
         default:

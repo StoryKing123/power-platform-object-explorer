@@ -14,15 +14,13 @@ export async function fetchCategories(): Promise<Category[]> {
       | {
           all: number
           entities: number
-          forms: number
-          views: number
-          workflows: number
-          plugins: number
-          webresources: number
           apps: number
           flows: number
           securityroles: number
           choices: number
+          connectionreferences: number
+          connectors: number
+          environmentvariables: number
         }
       | null = null
 
@@ -36,52 +34,44 @@ export async function fetchCategories(): Promise<Category[]> {
       // Fetch counts for all categories in parallel (fallback)
       const [
         entityCount,
-        formCount,
-        viewCount,
-        workflowCount,
-        pluginCount,
-        webResourceCount,
         appCount,
         flowCount,
         securityRoleCount,
         choiceCount,
+        connectionReferenceCount,
+        connectorCount,
+        environmentVariableCount,
       ] = await Promise.all([
         getEntityCount(),
-        getFormCount(),
-        getViewCount(),
-        getWorkflowCount(),
-        getPluginCount(),
-        getWebResourceCount(),
         getAppCount(),
         getFlowCount(),
         getSecurityRoleCount(),
         getChoiceCount(),
+        getConnectionReferenceCount(),
+        getConnectorCount(),
+        getEnvironmentVariableCount(),
       ])
 
       const totalCount =
         entityCount +
-        formCount +
-        viewCount +
-        workflowCount +
-        pluginCount +
-        webResourceCount +
         appCount +
         flowCount +
         securityRoleCount +
-        choiceCount
+        choiceCount +
+        connectionReferenceCount +
+        connectorCount +
+        environmentVariableCount
 
       counts = {
         all: totalCount,
         entities: entityCount,
-        forms: formCount,
-        views: viewCount,
-        workflows: workflowCount,
-        plugins: pluginCount,
-        webresources: webResourceCount,
         apps: appCount,
         flows: flowCount,
         securityroles: securityRoleCount,
         choices: choiceCount,
+        connectionreferences: connectionReferenceCount,
+        connectors: connectorCount,
+        environmentvariables: environmentVariableCount,
       }
     }
 
@@ -89,15 +79,13 @@ export async function fetchCategories(): Promise<Category[]> {
     const categories: Category[] = [
       { id: 'all', name: 'All Components', icon: 'LayoutGrid', count: counts.all },
       { id: 'entities', name: 'Entities', icon: 'Database', count: counts.entities },
-      { id: 'forms', name: 'Forms', icon: 'FileText', count: counts.forms },
-      { id: 'views', name: 'Views', icon: 'Table2', count: counts.views },
-      { id: 'workflows', name: 'Workflows', icon: 'GitBranch', count: counts.workflows },
-      { id: 'plugins', name: 'Plugins', icon: 'Puzzle', count: counts.plugins },
-      { id: 'webresources', name: 'Web Resources', icon: 'Globe', count: counts.webresources },
       { id: 'apps', name: 'Apps', icon: 'Package', count: counts.apps },
       { id: 'flows', name: 'Flows', icon: 'Zap', count: counts.flows },
       { id: 'securityroles', name: 'Security Roles', icon: 'Shield', count: counts.securityroles },
       { id: 'choices', name: 'Choices', icon: 'List', count: counts.choices },
+      { id: 'connectionreferences', name: 'Connection References', icon: 'Link', count: counts.connectionreferences },
+      { id: 'connectors', name: 'Custom Connectors', icon: 'Plug', count: counts.connectors },
+      { id: 'environmentvariables', name: 'Environment Variables', icon: 'Variable', count: counts.environmentvariables },
     ]
 
     return categories
@@ -312,6 +300,63 @@ async function getChoiceCount(): Promise<number> {
     return response.value?.length || 0
   } catch (error) {
     console.warn('Failed to get choice count:', error)
+    return 0
+  }
+}
+
+/**
+ * Get connection reference count
+ */
+async function getConnectionReferenceCount(): Promise<number> {
+  try {
+    const response = await d365ApiClient.getCollection<any>(
+      D365_API_CONFIG.endpoints.connectionReferences,
+      {
+        $count: true,
+        $top: 1,
+      }
+    )
+    return response['@odata.count'] || 0
+  } catch (error) {
+    console.warn('Failed to get connection reference count:', error)
+    return 0
+  }
+}
+
+/**
+ * Get connector count
+ */
+async function getConnectorCount(): Promise<number> {
+  try {
+    const response = await d365ApiClient.getCollection<any>(
+      D365_API_CONFIG.endpoints.connectors,
+      {
+        $count: true,
+        $top: 1,
+      }
+    )
+    return response['@odata.count'] || 0
+  } catch (error) {
+    console.warn('Failed to get connector count:', error)
+    return 0
+  }
+}
+
+/**
+ * Get environment variable count
+ */
+async function getEnvironmentVariableCount(): Promise<number> {
+  try {
+    const response = await d365ApiClient.getCollection<any>(
+      D365_API_CONFIG.endpoints.environmentVariables,
+      {
+        $count: true,
+        $top: 1,
+      }
+    )
+    return response['@odata.count'] || 0
+  } catch (error) {
+    console.warn('Failed to get environment variable count:', error)
     return 0
   }
 }

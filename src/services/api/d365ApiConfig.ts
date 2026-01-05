@@ -47,6 +47,9 @@ export const D365_API_CONFIG = {
     solutionComponentSummaries: 'msdyn_solutioncomponentsummaries',
     solutionComponentCountSummaries: 'msdyn_solutioncomponentcountsummaries',
     organizations: 'organizations',
+    connectionReferences: 'connectionreferences',
+    connectors: 'connectors',
+    environmentVariables: 'environmentvariabledefinitions',
   },
 
   // Default OData query parameters for each entity type
@@ -129,15 +132,13 @@ export const COMPONENT_TYPE_CODES: Record<string, number> = {
 // Category to component type mapping for search (supports multiple types per category)
 export const CATEGORY_COMPONENT_TYPES: Record<string, number[]> = {
   entities: [1],
-  forms: [24, 60],  // Both Form and System Form
-  views: [26],
-  workflows: [29],
-  flows: [29],  // Modern flows (workflows with category 5)
-  plugins: [91],
-  webResources: [61],
   apps: [80, 300],  // 80: Model-driven App (appmodule), 300: Canvas App
+  flows: [29],  // Modern flows (workflows with category 5)
   securityRoles: [20],
   choices: [9],  // OptionSet (Choice)
+  connectionReferences: [10150],  // Connection Reference
+  connectors: [372],  // Custom Connector
+  environmentVariables: [380, 381],  // Environment Variable Definition (380) and Value (381)
 }
 
 // Form type mappings

@@ -9,17 +9,15 @@ import type { SolutionComponentSummary } from '@/services/api/d365ApiTypes'
 function getCategoryFromComponentType(componentType: number): string {
   const categoryMap: Record<number, string> = {
     1: 'entities',
-    24: 'forms',
-    60: 'forms',
-    26: 'views',
-    29: 'workflows',
-    91: 'plugins',
-    92: 'plugins',
-    61: 'webResources',
     80: 'apps',    // Model-driven App
     300: 'apps',   // Canvas App
+    29: 'workflows',  // Will be filtered by category in flowService
     20: 'securityRoles',
     9: 'choices',  // OptionSet (Choice)
+    10150: 'connectionreferences',  // Connection Reference
+    372: 'connectors',  // Custom Connector
+    380: 'environmentvariables',  // Environment Variable Definition
+    381: 'environmentvariables',  // Environment Variable Value
   }
   return categoryMap[componentType] || 'unknown'
 }
@@ -41,17 +39,15 @@ function getComponentTypeLabel(componentType: number, subtype?: number | string 
 
   const labelMap: Record<number, string> = {
     1: 'Entity',
-    24: 'Form',
-    60: 'System Form',
-    26: 'View',
-    29: 'Workflow',
-    91: 'Plugin Assembly',
-    92: 'Plugin Step',
-    61: 'Web Resource',
     80: 'Model-driven App',
     300: 'Canvas App',
+    29: 'Workflow',
     20: 'Security Role',
     9: 'Choice',
+    10150: 'Connection Reference',
+    372: 'Custom Connector',
+    380: 'Environment Variable Definition',
+    381: 'Environment Variable Value',
   }
   return labelMap[componentType] || 'Component'
 }

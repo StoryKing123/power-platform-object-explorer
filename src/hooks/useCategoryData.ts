@@ -88,14 +88,12 @@ function getDefaultCategories(): Category[] {
   return [
     { id: 'all', name: 'All Components', icon: 'LayoutGrid', count: 0 },
     { id: 'entities', name: 'Entities', icon: 'Database', count: 0 },
-    { id: 'forms', name: 'Forms', icon: 'FileText', count: 0 },
-    { id: 'views', name: 'Views', icon: 'Table2', count: 0 },
-    { id: 'workflows', name: 'Workflows', icon: 'GitBranch', count: 0 },
-    { id: 'plugins', name: 'Plugins', icon: 'Puzzle', count: 0 },
-    { id: 'webresources', name: 'Web Resources', icon: 'Globe', count: 0 },
     { id: 'apps', name: 'Apps', icon: 'Package', count: 0 },
     { id: 'flows', name: 'Flows', icon: 'Zap', count: 0 },
     { id: 'securityroles', name: 'Security Roles', icon: 'Shield', count: 0 },
     { id: 'choices', name: 'Choices', icon: 'List', count: 0 },
+    { id: 'connectionreferences', name: 'Connection References', icon: 'Link', count: 0 },
+    { id: 'connectors', name: 'Custom Connectors', icon: 'Plug', count: 0 },
+    { id: 'environmentvariables', name: 'Environment Variables', icon: 'Variable', count: 0 },
   ]
 }

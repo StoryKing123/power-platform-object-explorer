@@ -11,17 +11,16 @@ import type { Solution } from '@/data/mockData'
 function getComponentTypeCode(category: string): number | null {
   const typeMap: Record<string, number> = {
     entities: COMPONENT_TYPE_CODES.entity,
-    forms: COMPONENT_TYPE_CODES.form,
-    views: COMPONENT_TYPE_CODES.view,
-    workflows: COMPONENT_TYPE_CODES.workflow,
     // Cloud flows are stored as workflows (category = 5)
     flows: COMPONENT_TYPE_CODES.workflow,
-    plugins: COMPONENT_TYPE_CODES.pluginAssembly, // Will handle both assembly and step
-    webresources: COMPONENT_TYPE_CODES.webResource,
     apps: COMPONENT_TYPE_CODES.canvasApp, // Both model-driven and canvas apps
     securityroles: COMPONENT_TYPE_CODES.securityRole,
+    choices: 9, // OptionSet
+    connectionreferences: 10150, // Connection Reference
+    connectors: 372, // Custom Connector
+    environmentvariables: 380, // Environment Variable Definition
   }
-  return typeMap[category] || null
+  return typeMap[category] ?? null
 }
 
 /**
