@@ -1,8 +1,7 @@
 import { Eye, MoreVertical, Play, ExternalLink, Database } from 'lucide-react'
-import { motion } from 'framer-motion'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { TableCell } from '@/components/ui/table'
+import { TableCell, TableRow } from '@/components/ui/table'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,18 +19,6 @@ interface ComponentTableRowProps {
   component: Component
   index: number
   onViewDetails: (component: Component) => void
-}
-
-// 表格行动画 variants
-const rowVariants = {
-  initial: { opacity: 0, y: 4 },
-  animate: { opacity: 1, y: 0 },
-  hover: {
-    scale: 1.005,
-    backgroundColor: 'color-mix(in oklch, var(--muted) 60%, transparent)',
-    boxShadow: '0 2px 8px -2px oklch(0 0 0 / 0.08)',
-    transition: { duration: 0.2, ease: 'easeOut' }
-  }
 }
 
 /**
@@ -180,56 +167,32 @@ export const ComponentTableRow = ({ component, index, onViewDetails }: Component
   const isFlow = component.category === 'flows' || component.type.toLowerCase().includes('flow')
 
   return (
-    <motion.tr
-      variants={rowVariants}
-      initial="initial"
-      animate="animate"
-      whileHover="hover"
-      transition={{ delay: index * 0.03, duration: 0.3 }}
-      className="group cursor-pointer border-b border-border/50"
-      onClick={() => onViewDetails(component)}
-    >
+    <TableRow onClick={() => onViewDetails(component)}>
       <TableCell className="font-medium">
-        <div className="truncate">{component.name}</div>
+        {component.name}
       </TableCell>
       <TableCell>
-        <Badge
-          variant="outline"
-          className="whitespace-nowrap transition-all duration-200 group-hover:border-primary/40 group-hover:bg-primary/5 group-hover:text-primary"
-        >
+        <Badge variant="outline">
           {component.type}
         </Badge>
       </TableCell>
       <TableCell className="text-center">
-        <Badge
-          variant={getStatusVariant(component.status)}
-          className="whitespace-nowrap transition-all duration-200 group-hover:shadow-sm"
-        >
+        <Badge variant={getStatusVariant(component.status)}>
           {component.status}
         </Badge>
       </TableCell>
       <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
-        <div className="flex items-center gap-2 transition-colors group-hover:text-foreground/80">
-          <Clock className="h-3.5 w-3.5 opacity-60" />
+        <div className="flex items-center gap-2">
+          <Clock className="h-3.5 w-3.5" />
           <span>{component.lastModified}</span>
         </div>
       </TableCell>
       <TableCell>
         <DropdownMenu>
           <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ opacity: { duration: 0.15 }, scale: { duration: 0.2, ease: 'backOut' } }}
-            >
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 opacity-0 transition-all duration-200 group-hover:opacity-100 group-hover:bg-accent/80 group-hover:scale-105"
-              >
-                <MoreVertical className="h-4 w-4" />
-              </Button>
-            </motion.div>
+            <Button variant="ghost" size="icon" className="h-8 w-8">
+              <MoreVertical className="h-4 w-4" />
+            </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => onViewDetails(component)}>
@@ -269,6 +232,6 @@ export const ComponentTableRow = ({ component, index, onViewDetails }: Component
           </DropdownMenuContent>
         </DropdownMenu>
       </TableCell>
-    </motion.tr>
+    </TableRow>
   )
 }

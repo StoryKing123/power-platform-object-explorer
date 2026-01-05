@@ -1,4 +1,3 @@
-import { motion } from 'framer-motion'
 import { Search, AlertCircle, RefreshCw, Package } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -41,8 +40,8 @@ export const ComponentTable = ({
 }: ComponentTableProps) => {
   if (loading) {
     return (
-      <div className="overflow-hidden rounded-xl border border-border/60 bg-card/95 backdrop-blur-sm shadow-lg shadow-black/5">
-        <Table className="table-fixed [&_th]:h-10 [&_th]:px-3 [&_td]:p-3">
+      <div className="w-full">
+        <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
@@ -54,34 +53,28 @@ export const ComponentTable = ({
           </TableHeader>
           <TableBody>
             {[...Array(8)].map((_, i) => (
-              <motion.tr
-                key={i}
-                initial={{ opacity: 0, y: 4 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.05, duration: 0.3 }}
-                className="border-b border-border/50"
-              >
+              <TableRow key={i}>
                 <TableCell>
                   <div className="flex items-center gap-2">
-                    <Skeleton className="h-8 w-8 rounded-lg" />
+                    <Skeleton className="h-4 w-4" />
                     <Skeleton className="h-4 w-32" />
                   </div>
                 </TableCell>
                 <TableCell>
-                  <Skeleton className="h-5 w-16 rounded-full" />
+                  <Skeleton className="h-4 w-16" />
                 </TableCell>
                 <TableCell>
                   <div className="flex justify-center">
-                    <Skeleton className="h-5 w-20 rounded-full" />
+                    <Skeleton className="h-4 w-20" />
                   </div>
                 </TableCell>
                 <TableCell className="hidden lg:table-cell">
                   <Skeleton className="h-4 w-24" />
                 </TableCell>
                 <TableCell>
-                  <Skeleton className="h-8 w-8 rounded-md" />
+                  <Skeleton className="h-4 w-4" />
                 </TableCell>
-              </motion.tr>
+              </TableRow>
             ))}
           </TableBody>
         </Table>
@@ -119,13 +112,8 @@ export const ComponentTable = ({
 
   return (
     <>
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-        className="overflow-hidden rounded-xl border border-border/60 bg-card/95 backdrop-blur-sm shadow-lg shadow-black/5"
-      >
-        <Table className="table-fixed [&_th]:h-10 [&_th]:px-3 [&_td]:p-3">
+      <div className="w-full">
+        <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
@@ -146,7 +134,7 @@ export const ComponentTable = ({
             ))}
           </TableBody>
         </Table>
-      </motion.div>
+      </div>
 
       {hasMore && !loading && (
         <div className="mt-4 text-center">
@@ -173,30 +161,23 @@ export const SearchResultBanner = ({ searchQuery, totalCount, onClearSearch }: S
   if (!searchQuery) return null
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: -10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="mb-4 rounded-xl border border-border/50 bg-card/40 p-4 backdrop-blur-md"
-    >
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Search className="h-4 w-4 text-primary" />
-          <span className="text-sm text-foreground">
-            搜索结果: <strong>"{searchQuery}"</strong>
-            {totalCount !== undefined && (
-              <span className="ml-1">({totalCount} 项)</span>
-            )}
-          </span>
-        </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onClearSearch}
-          className="text-muted-foreground hover:text-foreground"
-        >
-          清空搜索
-        </Button>
+    <div className="mb-4 flex items-center justify-between border-b pb-4">
+      <div className="flex items-center gap-2">
+        <Search className="h-4 w-4" />
+        <span className="text-sm">
+          搜索结果: <strong>"{searchQuery}"</strong>
+          {totalCount !== undefined && (
+            <span className="ml-1 text-muted-foreground">({totalCount} 项)</span>
+          )}
+        </span>
       </div>
-    </motion.div>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={onClearSearch}
+      >
+        清空搜索
+      </Button>
+    </div>
   )
 }

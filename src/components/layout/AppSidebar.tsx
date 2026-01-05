@@ -16,7 +16,6 @@ import {
   SidebarSeparator,
 } from '@/components/ui/sidebar'
 import { type Category } from '@/data/mockData'
-import { getIconComponent } from '@/utils/componentHelpers'
 
 interface AppSidebarProps {
   categories: Category[]
@@ -68,22 +67,20 @@ export const AppSidebar = ({
                 {categoriesLoading ? (
                   [...Array(11)].map((_, i) => (
                     <SidebarMenuItem key={i}>
-                      <Skeleton className="h-10 w-full rounded-lg" />
+                      <Skeleton className="h-8 w-full rounded-md" />
                     </SidebarMenuItem>
                   ))
                 ) : (
                   categories.map((category) => {
-                    const Icon = getIconComponent(category.icon)
                     return (
                       <SidebarMenuItem key={category.id}>
                         <SidebarMenuButton
                           isActive={selectedCategory === category.id}
                           onClick={() => onCategoryChange(category.id)}
-                          className="h-10 rounded-lg px-3 hover:bg-sidebar-accent/70 data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground"
+                          className="h-8 rounded-md px-2"
                         >
-                          <Icon className="h-4 w-4" />
                           <span className="flex-1">{category.name}</span>
-                          <SidebarMenuBadge className="bg-sidebar-accent/70 text-sidebar-foreground/80 data-[active=true]:bg-primary/15 data-[active=true]:text-sidebar-foreground">
+                          <SidebarMenuBadge>
                             {category.count}
                           </SidebarMenuBadge>
                         </SidebarMenuButton>
