@@ -18,6 +18,8 @@ import { getEnvironmentId } from '@/services/dataServices/environmentService'
 import { getFlowType } from '@/services/transformers/componentTransformer'
 import type { Workflow } from '@/services/api/d365ApiTypes'
 import { toast } from 'sonner'
+import { PropertiesTabContent } from './PropertiesTabContent'
+import { OverviewTabContent } from './OverviewTabContent'
 
 interface ComponentDetailDialogProps {
   component: Component | null
@@ -144,20 +146,20 @@ export const ComponentDetailDialog = ({
           <div className="p-6">
             <DialogHeader>
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg border border-primary/20 bg-primary/10 flex items-center justify-center">
+                <div className="h-10 w-10 rounded-lg border border-border bg-muted flex items-center justify-center">
                   {(() => {
                     const Icon = getIconComponent(
                       categories.find(c => c.id === component.category)?.icon || 'LayoutGrid'
                     )
-                    return <Icon className="h-5 w-5 text-primary" />
+                    return <Icon className="h-5 w-5 text-muted-foreground" />
                   })()}
                 </div>
                 <div className="min-w-0">
                   <DialogTitle className="truncate text-lg tracking-tight">{component.name}</DialogTitle>
                   <div className="mt-1 flex flex-wrap gap-1.5">
                     <Badge variant="secondary" className="text-xs px-2 py-0.5">{component.type}</Badge>
-                    <Badge variant="outline" className="text-xs px-2 py-0.5">{component.category}</Badge>
-                    <Badge variant={getStatusVariant(component.status)} className="text-xs px-2 py-0.5">
+                    <Badge variant="secondary" className="text-xs px-2 py-0.5">{component.category}</Badge>
+                    <Badge variant="secondary" className="text-xs px-2 py-0.5">
                       {component.status}
                     </Badge>
                   </div>
@@ -166,79 +168,29 @@ export const ComponentDetailDialog = ({
             </DialogHeader>
 
             <Tabs value={currentTab} onValueChange={setCurrentTab} className="mt-6">
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList>
                 <TabsTrigger value="overview">Overview</TabsTrigger>
                 <TabsTrigger value="properties">Properties</TabsTrigger>
                 <TabsTrigger value="dependencies">Dependencies</TabsTrigger>
                 <TabsTrigger value="solutions">Solutions</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="overview" className="space-y-4 mt-4">
-                <div>
-                  <h3 className="mb-2 text-sm font-medium text-muted-foreground">Description</h3>
-                  <p className="text-sm text-foreground">{component.description}</p>
-                </div>
-
-                <div className="space-y-0 text-sm mt-4">
-                  <div className="flex justify-between py-2 border-b border-border/40">
-                    <span className="text-muted-foreground">Type</span>
-                    <span className="font-medium text-foreground">{component.type}</span>
-                  </div>
-                  <div className="flex justify-between py-2 border-b border-border/40">
-                    <span className="text-muted-foreground">Category</span>
-                    <span className="font-medium text-foreground">{component.category}</span>
-                  </div>
-                  <div className="flex justify-between py-2 border-b border-border/40">
-                    <span className="text-muted-foreground">Status</span>
-                    <Badge variant={getStatusVariant(component.status)} className="text-xs px-2 py-0.5">
-                      {component.status}
-                    </Badge>
-                  </div>
-                  <div className="flex justify-between py-2 border-b border-border/40">
-                    <span className="text-muted-foreground">Last Modified</span>
-                    <span className="font-medium text-foreground">{component.lastModified}</span>
-                  </div>
-                  {isFlow(component) && (
-                    <div className="flex justify-between py-2 border-b border-border/40">
-                      <span className="text-muted-foreground">Flow Type</span>
-                      {loadingFlowDetails ? (
-                        <div className="flex items-center gap-2">
-                          <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
-                          <span className="text-sm text-muted-foreground">Loading...</span>
-                        </div>
-                      ) : flowDetails ? (
-                        <span className="font-medium text-foreground">
-                          {getFlowType(flowDetails)}
-                        </span>
-                      ) : (
-                        <span className="font-medium text-foreground">Cloud Flow</span>
-                      )}
-                    </div>
-                  )}
-                </div>
+              <TabsContent value="overview" className="mt-4 min-h-[500px]">
+                <OverviewTabContent
+                  component={component}
+                  flowDetails={flowDetails}
+                  loadingFlowDetails={loadingFlowDetails}
+                  getStatusVariant={getStatusVariant}
+                  getFlowType={getFlowType}
+                  isFlow={isFlow}
+                />
               </TabsContent>
 
-              <TabsContent value="properties" className="space-y-4 mt-4">
-                <div className="space-y-0">
-                  {component.metadata ? (
-                    Object.entries(component.metadata).map(([key, value]) => (
-                      <div
-                        key={key}
-                        className="flex items-center justify-between py-2 border-b border-border/40"
-                      >
-                        <span className="text-sm font-medium text-foreground">{key}</span>
-                        <span className="max-w-[60%] truncate text-right text-sm text-muted-foreground">
-                          {typeof value === 'boolean' ? (value ? 'Yes' : 'No') : String(value || 'N/A')}
-                        </span>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-sm text-muted-foreground">No metadata available</p>
-                  )}
-                </div>
+              <TabsContent value="properties" className="mt-4 min-h-[500px]">
+                <PropertiesTabContent metadata={component.metadata} />
               </TabsContent>
 
-              <TabsContent value="dependencies" className="space-y-4 mt-4">
+              <TabsContent value="dependencies" className="space-y-4 mt-4 min-h-[500px]">
                 <p className="text-sm text-muted-foreground">
                   This component has dependencies on the following items:
                 </p>
@@ -248,28 +200,28 @@ export const ComponentDetailDialog = ({
                       key={dep}
                       className="flex items-center gap-3 py-2 border-b border-border/40"
                     >
-                      <Database className="h-4 w-4 text-primary" />
+                      <Database className="h-4 w-4 text-muted-foreground" />
                       <span className="text-sm text-foreground">{dep}</span>
                     </div>
                   ))}
                 </div>
               </TabsContent>
 
-              <TabsContent value="solutions" className="space-y-4 mt-4">
+              <TabsContent value="solutions" className="space-y-4 mt-4 min-h-[500px]">
                 {loadingSolutions ? (
                   <div className="flex items-center justify-center py-8">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                     <span className="ml-3 text-sm text-muted-foreground">Loading solutions...</span>
                   </div>
                 ) : componentSolutions && componentSolutions.length > 0 ? (
-                  <div className="space-y-1.5">
-                    <p className="mb-2 text-sm text-muted-foreground">
+                  <div className="space-y-3">
+                    <p className="mb-3 text-sm text-muted-foreground">
                       This component is included in {componentSolutions.length} solution{componentSolutions.length > 1 ? 's' : ''}:
                     </p>
                     {sortedComponentSolutions.map((solution) => (
                       <div
                         key={solution.id}
-                        className="cursor-pointer rounded-lg border border-border/50 bg-muted/15 p-2.5 transition-colors hover:border-primary/40 hover:bg-muted/25"
+                        className="group cursor-pointer rounded-lg border border-border/50 bg-card/50 p-5 transition-all duration-200 hover:border-primary/40 hover:bg-card/70 hover:shadow-lg hover:shadow-primary/5"
                         role="button"
                         tabIndex={0}
                         title="Open solution in Power Platform"
@@ -281,43 +233,45 @@ export const ComponentDetailDialog = ({
                           }
                         }}
                       >
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="min-w-0 flex-1 space-y-3">
+                            <div className="flex items-center gap-2.5">
                               <Package className="h-4 w-4 shrink-0 text-primary" />
                               <h4 className="min-w-0 truncate text-sm font-semibold text-foreground">
                                 {solution.displayName}
                               </h4>
                               {solution.isManaged && (
-                                <Badge variant="secondary" className="text-[10px] leading-4 px-1.5 py-0">
+                                <Badge variant="default" className="text-xs px-2.5 py-1">
                                   Managed
                                 </Badge>
                               )}
                             </div>
-                            <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                              <span className="inline-flex items-center gap-1">
-                                <span className="font-medium text-muted-foreground">Name</span>
-                                <span className="font-mono">{solution.name}</span>
-                              </span>
-                              <span className="inline-flex items-center gap-1">
-                                <span className="font-medium text-muted-foreground">Version</span>
-                                <span className="font-mono">{solution.version}</span>
-                              </span>
-                              <span className="inline-flex items-center gap-1 min-w-0">
-                                <span className="font-medium text-muted-foreground">Publisher</span>
-                                <span className="truncate" title={solution.publisher}>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2">
+                              <div className="flex items-baseline gap-2 min-w-0">
+                                <span className="text-xs font-medium text-muted-foreground shrink-0">Name</span>
+                                <span className="text-xs font-mono text-foreground truncate">{solution.name}</span>
+                              </div>
+                              <div className="flex items-baseline gap-2 min-w-0">
+                                <span className="text-xs font-medium text-muted-foreground shrink-0">Version</span>
+                                <span className="text-xs font-mono text-foreground">{solution.version}</span>
+                              </div>
+                              <div className="flex items-baseline gap-2 min-w-0">
+                                <span className="text-xs font-medium text-muted-foreground shrink-0">Publisher</span>
+                                <span className="text-xs text-foreground truncate" title={solution.publisher}>
                                   {solution.publisher}
                                 </span>
-                              </span>
+                              </div>
                               {solution.installedOn && (
-                                <span className="inline-flex items-center gap-1">
-                                  <span className="font-medium text-muted-foreground">Installed</span>
-                                  <span className="font-mono">{formatInstalledOn(solution.installedOn)}</span>
-                                </span>
+                                <div className="flex items-baseline gap-2 min-w-0">
+                                  <span className="text-xs font-medium text-muted-foreground shrink-0">Installed</span>
+                                  <span className="text-xs font-mono text-foreground">
+                                    {formatInstalledOn(solution.installedOn)}
+                                  </span>
+                                </div>
                               )}
                             </div>
                           </div>
-                          <ExternalLink className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                          <ExternalLink className="h-4 w-4 shrink-0 text-muted-foreground/60 transition-colors group-hover:text-primary" />
                         </div>
                       </div>
                     ))}

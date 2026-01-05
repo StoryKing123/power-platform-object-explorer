@@ -2,6 +2,7 @@ import { motion } from 'framer-motion'
 import { Sparkles } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { getIconComponent } from '@/utils/componentHelpers'
 import {
   Sidebar,
   SidebarContent,
@@ -41,7 +42,7 @@ export const AppSidebar = ({
       className="bg-sidebar/65 backdrop-blur-xl"
     >
       <SidebarHeader className="h-[88px] shrink-0 justify-center gap-3 p-4">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 group-data-[collapsible=icon]:hidden">
           <motion.div
             whileHover={{ rotate: 8, scale: 1.02 }}
             transition={{ duration: 0.25 }}
@@ -72,14 +73,17 @@ export const AppSidebar = ({
                   ))
                 ) : (
                   categories.map((category) => {
+                    const Icon = getIconComponent(category.icon)
                     return (
                       <SidebarMenuItem key={category.id}>
                         <SidebarMenuButton
                           isActive={selectedCategory === category.id}
                           onClick={() => onCategoryChange(category.id)}
                           className="h-8 rounded-md px-2"
+                          tooltip={category.name}
                         >
-                          <span className="flex-1">{category.name}</span>
+                          <Icon className="h-4 w-4 shrink-0" />
+                          <span className="flex-1 group-data-[collapsible=icon]:hidden">{category.name}</span>
                           <SidebarMenuBadge>
                             {category.count}
                           </SidebarMenuBadge>
