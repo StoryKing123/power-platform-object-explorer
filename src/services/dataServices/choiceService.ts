@@ -3,7 +3,7 @@
 import { d365ApiClient } from '../api/d365ApiClient'
 import { D365_API_CONFIG } from '../api/d365ApiConfig'
 import type { SolutionComponentSummary, ODataResponse, ODataParams } from '../api/d365ApiTypes'
-import { getDefaultSolutionId } from './searchService'
+import { buildSolutionComponentSummarySearchClause, getDefaultSolutionId, handleWorkflowIdUniqueUnsupported } from './searchService'
 
 /**
  * 构建 Choice 的 filter 条件
@@ -15,9 +15,7 @@ function buildChoiceFilter(solutionId: string, searchQuery?: string): string {
   const baseFilter = `${choiceTypeFilter} and ${solutionFilter}`
 
   if (searchQuery && searchQuery.trim()) {
-    const sanitizedQuery = searchQuery.replace(/'/g, "''").trim()
-    const searchFilter = `(contains(msdyn_name, '${sanitizedQuery}') or contains(msdyn_displayname, '${sanitizedQuery}'))`
-    return `${baseFilter} and ${searchFilter}`
+    return `${baseFilter} and ${buildSolutionComponentSummarySearchClause(searchQuery)}`
   }
 
   return baseFilter
@@ -68,11 +66,18 @@ export async function searchChoices(
     $top: pageSize,
   }
 
-  return await d365ApiClient.getCollection<SolutionComponentSummary>(
-    D365_API_CONFIG.endpoints.solutionComponentSummaries,
-    params,
-    'v9.0'
-  )
+  try {
+    return await d365ApiClient.getCollection<SolutionComponentSummary>(
+      D365_API_CONFIG.endpoints.solutionComponentSummaries,
+      params,
+      'v9.0'
+    )
+  } catch (error) {
+    if (handleWorkflowIdUniqueUnsupported(error)) {
+      return await searchChoices(query, pageSize, skip)
+    }
+    throw error
+  }
 }
 
 /**

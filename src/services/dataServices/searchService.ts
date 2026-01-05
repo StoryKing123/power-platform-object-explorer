@@ -8,21 +8,44 @@ import type { ODataResponse, SolutionComponentSummary, Solution } from '../api/d
 let defaultSolutionId: string | null = null
 let solutionIdFetchPromise: Promise<string> | null = null
 let supportsPrimaryIdAttribute = true
+let supportsWorkflowIdUnique = true
 
 const PRIMARY_ID_ATTRIBUTE_FIELD = 'msdyn_primaryidattribute'
+const WORKFLOW_ID_UNIQUE_FIELD = 'msdyn_workflowidunique'
+const GUID_REGEX = /^\{?[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\}?$/
 
-function buildSelectWithPrimaryIdAttribute(select: string): string {
-  if (select.split(',').map(s => s.trim()).includes(PRIMARY_ID_ATTRIBUTE_FIELD)) return select
-  return `${select},${PRIMARY_ID_ATTRIBUTE_FIELD}`
+function buildSelectWithField(select: string, field: string): string {
+  if (select.split(',').map(s => s.trim()).includes(field)) return select
+  return `${select},${field}`
+}
+
+function getCombinedErrorMessage(error: unknown): string {
+  if (!error || typeof error !== 'object') return ''
+  const message = String((error as any).message ?? '')
+  const detailsMessage = String((error as any).details?.error?.message ?? '')
+  return `${message} ${detailsMessage}`.trim()
+}
+
+function isDictionaryKeyError(error: unknown): boolean {
+  const combined = getCombinedErrorMessage(error).toLowerCase()
+  return combined.includes('given key was not present in the dictionary')
+}
+
+function isOptionalFieldUnsupported(error: unknown, field: string): boolean {
+  const combined = getCombinedErrorMessage(error).toLowerCase()
+  return combined.includes(field.toLowerCase()) || isDictionaryKeyError(error)
 }
 
 function isPrimaryIdAttributeUnsupported(error: unknown): boolean {
   if (!supportsPrimaryIdAttribute) return false
   if (!error || typeof error !== 'object') return false
-  const message = String((error as any).message ?? '')
-  const detailsMessage = String((error as any).details?.error?.message ?? '')
-  const combined = `${message} ${detailsMessage}`
-  return combined.toLowerCase().includes(PRIMARY_ID_ATTRIBUTE_FIELD)
+  return isOptionalFieldUnsupported(error, PRIMARY_ID_ATTRIBUTE_FIELD)
+}
+
+function isWorkflowIdUniqueUnsupported(error: unknown): boolean {
+  if (!supportsWorkflowIdUnique) return false
+  if (!error || typeof error !== 'object') return false
+  return isOptionalFieldUnsupported(error, WORKFLOW_ID_UNIQUE_FIELD)
 }
 
 /**
@@ -34,6 +57,39 @@ function sanitizeSearchQuery(query: string): string {
     .replace(/'/g, "''")      // Escape single quotes for OData
     .replace(/\\/g, '\\\\')   // Escape backslashes
     .trim()
+}
+
+function normalizeGuidForOData(value: string): string | null {
+  const trimmed = value.trim()
+  if (!GUID_REGEX.test(trimmed)) return null
+  return trimmed.replace(/^\{|\}$/g, '').toLowerCase()
+}
+
+function buildSolutionComponentSearchSelect(): string {
+  let select = D365_API_CONFIG.queries.solutionComponentSearch.$select
+  if (supportsWorkflowIdUnique) {
+    select = buildSelectWithField(select, WORKFLOW_ID_UNIQUE_FIELD)
+  }
+  if (supportsPrimaryIdAttribute) {
+    select = buildSelectWithField(select, PRIMARY_ID_ATTRIBUTE_FIELD)
+  }
+  return select
+}
+
+export function buildSolutionComponentSummarySearchClause(query: string): string {
+  const sanitizedQuery = sanitizeSearchQuery(query)
+  if (!sanitizedQuery) return ''
+
+  const guid = normalizeGuidForOData(sanitizedQuery)
+  if (!guid) {
+    return `(contains(msdyn_name, '${sanitizedQuery}') or contains(msdyn_displayname, '${sanitizedQuery}'))`
+  }
+
+  const idFilters = [`msdyn_objectid eq ${guid}`]
+  if (supportsWorkflowIdUnique) {
+    idFilters.push(`msdyn_workflowidunique eq ${guid}`)
+  }
+  return `(${idFilters.join(' or ')})`
 }
 
 /**
@@ -105,11 +161,8 @@ function buildSearchFilter(
   query: string,
   componentTypes?: number[]
 ): string {
-  const sanitizedQuery = sanitizeSearchQuery(query)
-
-  // Base filter: solution ID and search terms
-  const searchFilter = `(contains(msdyn_name, '${sanitizedQuery}') or contains(msdyn_displayname, '${sanitizedQuery}'))`
   const solutionFilter = `(msdyn_solutionid eq ${solutionId})`
+  const searchFilter = buildSolutionComponentSummarySearchClause(query)
 
   // Add component type filter if specified
   if (componentTypes && componentTypes.length > 0) {
@@ -160,9 +213,7 @@ export async function searchComponents(
     // Note: msdyn_solutioncomponentsummaries does not support $skip
     const params = {
       ...D365_API_CONFIG.queries.solutionComponentSearch,
-      $select: supportsPrimaryIdAttribute
-        ? buildSelectWithPrimaryIdAttribute(D365_API_CONFIG.queries.solutionComponentSearch.$select)
-        : D365_API_CONFIG.queries.solutionComponentSearch.$select,
+      $select: buildSolutionComponentSearchSelect(),
       $filter: filter,
       $top: pageSize,
     }
@@ -180,8 +231,18 @@ export async function searchComponents(
       supportsPrimaryIdAttribute = false
       return await searchComponents(query, category, pageSize, skip)
     }
+    if (isWorkflowIdUniqueUnsupported(error)) {
+      supportsWorkflowIdUnique = false
+      return await searchComponents(query, category, pageSize, skip)
+    }
     // Re-throw with more context
     console.error('Search failed:', error)
     throw error
   }
+}
+
+export function handleWorkflowIdUniqueUnsupported(error: unknown): boolean {
+  if (!isWorkflowIdUniqueUnsupported(error)) return false
+  supportsWorkflowIdUnique = false
+  return true
 }
