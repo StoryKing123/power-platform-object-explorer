@@ -444,10 +444,29 @@ export function useComponentData(
   }, [category, searchQuery])
 
   /**
-   * Fetch total count
+   * 异步获取分类数量，不阻塞组件数据加载
    */
   useEffect(() => {
-    fetchCategoryCount().then(setTotalCount)
+    // 重置数量为 0，避免显示旧数据
+    setTotalCount(0)
+
+    // 异步加载数量，不阻塞数据展示
+    let cancelled = false
+
+    fetchCategoryCount().then(count => {
+      if (!cancelled) {
+        setTotalCount(count)
+      }
+    }).catch(err => {
+      console.warn('Failed to fetch category count:', err)
+      if (!cancelled) {
+        setTotalCount(0)
+      }
+    })
+
+    return () => {
+      cancelled = true
+    }
   }, [category, fetchCategoryCount])
 
   return {
