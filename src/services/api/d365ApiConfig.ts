@@ -134,11 +134,11 @@ export const CATEGORY_COMPONENT_TYPES: Record<string, number[]> = {
   entities: [1],
   apps: [80, 300],  // 80: Model-driven App (appmodule), 300: Canvas App
   flows: [29],  // Modern flows (workflows with category 5)
-  securityRoles: [20],
+  securityroles: [20],
   choices: [9],  // OptionSet (Choice)
-  connectionReferences: [10150],  // Connection Reference
+  connectionreferences: [10150],  // Connection Reference
   connectors: [372],  // Custom Connector
-  environmentVariables: [380, 381],  // Environment Variable Definition (380) and Value (381)
+  environmentvariables: [380, 381],  // Environment Variable Definition (380) and Value (381)
 }
 
 // Form type mappings
