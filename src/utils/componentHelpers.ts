@@ -109,6 +109,34 @@ export const isFlow = (component: Component): boolean => {
 }
 
 /**
+ * 判断组件是否为 Security Role (componenttype 20)
+ */
+export const isSecurityRole = (component: Component): boolean => {
+  // Check category field first (most reliable in current implementation)
+  if (component.category === 'securityroles') {
+    return true
+  }
+
+  // Check metadata for componentType (from search result)
+  const componentType = component.metadata?.componentType
+  if (componentType === 20) {
+    return true
+  }
+
+  // Check primaryIdAttribute
+  const primaryIdAttribute = String(
+    component.metadata?.primaryIdAttribute ??
+    component.metadata?._searchResult?.msdyn_primaryidattribute ??
+    ''
+  ).toLowerCase()
+  if (primaryIdAttribute === 'roleid') {
+    return true
+  }
+
+  return false
+}
+
+/**
  * 获取 Entity Metadata 页面的 web resource 名称
  * 从配置文件中读取
  */

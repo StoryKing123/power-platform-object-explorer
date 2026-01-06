@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Clock } from 'lucide-react'
 import { type Component } from '@/data/mockData'
-import { getStatusVariant, normalizeGuid, isCanvasApp, isModelDrivenApp, isEntity, getEntityMetadataWebResourceName } from '@/utils/componentHelpers'
+import { getStatusVariant, normalizeGuid, isCanvasApp, isModelDrivenApp, isEntity, isSecurityRole, getEntityMetadataWebResourceName } from '@/utils/componentHelpers'
 import { getEnvironmentId } from '@/services/dataServices/environmentService'
 import { getDefaultSolutionId } from '@/services/dataServices/searchService'
 import { toast } from 'sonner'
@@ -143,6 +143,46 @@ export const ComponentTableRow = ({ component, index, onViewDetails }: Component
     window.open(flowEditorUrl, '_blank')
   }
 
+  const handleEditSecurityRole = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+
+    const roleId = normalizeGuid(component.id)
+    if (!roleId) {
+      toast.error('Unable to open security role: role ID not found')
+      return
+    }
+
+    let environmentId: string
+    try {
+      toast.loading('Retrieving environment ID...')
+      environmentId = await getEnvironmentId()
+      toast.dismiss()
+    } catch (error) {
+      toast.dismiss()
+      toast.error('Failed to retrieve environment ID', {
+        description: error instanceof Error ? error.message : 'Unable to get environment ID from Dynamics 365 API'
+      })
+      return
+    }
+
+    let solutionId: string
+    try {
+      toast.loading('Retrieving default solution ID...')
+      solutionId = await getDefaultSolutionId()
+      toast.dismiss()
+    } catch (error) {
+      toast.dismiss()
+      toast.error('Failed to retrieve default solution ID', {
+        description: error instanceof Error ? error.message : 'Unable to get default solution ID from Dynamics 365 API'
+      })
+      return
+    }
+
+    const editUrl = `https://make.powerapps.com/e/${environmentId}/s/${solutionId}/securityRoles/${roleId}/roleEditor`
+    window.open(editUrl, '_blank', 'noopener,noreferrer')
+  }
+
   const handleViewMetadata = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
@@ -227,6 +267,12 @@ export const ComponentTableRow = ({ component, index, onViewDetails }: Component
               <DropdownMenuItem onClick={handleOpenFlow}>
                 <ExternalLink className="h-4 w-4 mr-2" />
                 Open in Flow Editor
+              </DropdownMenuItem>
+            )}
+            {isSecurityRole(component) && (
+              <DropdownMenuItem onClick={handleEditSecurityRole}>
+                <ExternalLink className="h-4 w-4 mr-2" />
+                Edit in new tab
               </DropdownMenuItem>
             )}
           </DropdownMenuContent>
