@@ -333,9 +333,20 @@ export function useComponentData(
 
         // Update state
         if (append) {
-          setData(prev => [...prev, ...components])
+          setData(prev => {
+            const newData = [...prev, ...components]
+            // Update totalCount for search results to reflect actual loaded count
+            if (searchQuery && searchQuery.trim()) {
+              setTotalCount(newData.length)
+            }
+            return newData
+          })
         } else {
           setData(components)
+          // Update totalCount for search results to reflect actual loaded count
+          if (searchQuery && searchQuery.trim()) {
+            setTotalCount(components.length)
+          }
           // Cache first page data
           if (page === 0 && !searchQuery) {
             cacheService.cacheComponentList(category, components)

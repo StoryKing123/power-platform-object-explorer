@@ -103,7 +103,7 @@ export const ComponentTable = ({
         <h3 className="text-lg font-semibold mb-2">No components found</h3>
         <p className="text-sm text-muted-foreground">
           {debouncedSearchQuery
-            ? `没有找到匹配 "${debouncedSearchQuery}" 的组件`
+            ? `No components found matching "${debouncedSearchQuery}"`
             : 'No components available in this category'}
         </p>
       </Card>
@@ -155,7 +155,7 @@ interface SearchResultBannerProps {
 }
 
 /**
- * 搜索结果横幅组件
+ * Search result banner component
  */
 export const SearchResultBanner = ({ searchQuery, totalCount, onClearSearch }: SearchResultBannerProps) => {
   if (!searchQuery) return null
@@ -165,9 +165,9 @@ export const SearchResultBanner = ({ searchQuery, totalCount, onClearSearch }: S
       <div className="flex items-center gap-2">
         <Search className="h-4 w-4" />
         <span className="text-sm">
-          搜索结果: <strong>"{searchQuery}"</strong>
+          Search results: <strong>"{searchQuery}"</strong>
           {totalCount !== undefined && (
-            <span className="ml-1 text-muted-foreground">({totalCount} 项)</span>
+            <span className="ml-1 text-muted-foreground">({totalCount} {totalCount === 1 ? 'item' : 'items'})</span>
           )}
         </span>
       </div>
@@ -176,7 +176,7 @@ export const SearchResultBanner = ({ searchQuery, totalCount, onClearSearch }: S
         size="sm"
         onClick={onClearSearch}
       >
-        清空搜索
+        Clear search
       </Button>
     </div>
   )
