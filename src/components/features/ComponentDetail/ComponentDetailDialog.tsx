@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Database, Package, Loader2, ExternalLink } from 'lucide-react'
+import { Database, Package, Loader2, ExternalLink, Clock3 } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -214,67 +214,70 @@ export const ComponentDetailDialog = ({
                     <span className="ml-3 text-sm text-muted-foreground">Loading solutions...</span>
                   </div>
                 ) : componentSolutions && componentSolutions.length > 0 ? (
-                  <div className="space-y-3">
-                    <p className="mb-3 text-sm text-muted-foreground">
+                  <div className="space-y-4">
+                    <p className="text-sm text-muted-foreground">
                       This component is included in {componentSolutions.length} solution{componentSolutions.length > 1 ? 's' : ''}:
                     </p>
-                    {sortedComponentSolutions.map((solution) => (
-                      <div
-                        key={solution.id}
-                        className="group cursor-pointer rounded-lg border border-border/50 bg-card/50 p-5 transition-all duration-200 hover:border-primary/40 hover:bg-card/70 hover:shadow-lg hover:shadow-primary/5"
-                        role="button"
-                        tabIndex={0}
-                        title="Open solution in Power Platform"
-                        onClick={() => openSolutionInPowerPlatform(solution)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault()
-                            openSolutionInPowerPlatform(solution)
-                          }
-                        }}
-                      >
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="min-w-0 flex-1 space-y-3">
-                            <div className="flex items-center gap-2.5">
-                              <Package className="h-4 w-4 shrink-0 text-primary" />
-                              <h4 className="min-w-0 truncate text-sm font-semibold text-foreground">
-                                {solution.displayName}
-                              </h4>
-                              {solution.isManaged && (
-                                <Badge variant="default" className="text-xs px-2.5 py-1">
-                                  Managed
+                    <div className="overflow-hidden rounded-xl border border-border/60 bg-background shadow-sm">
+                      <div className="divide-y divide-border/60">
+                        {sortedComponentSolutions.map((solution) => (
+                          <div
+                            key={solution.id}
+                            className="group relative flex cursor-pointer flex-col gap-3 p-4 transition-colors duration-150 hover:bg-muted/40 sm:flex-row sm:items-center sm:gap-6"
+                            role="button"
+                            tabIndex={0}
+                            title="Open solution in Power Platform"
+                            onClick={() => openSolutionInPowerPlatform(solution)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault()
+                                openSolutionInPowerPlatform(solution)
+                              }
+                            }}
+                          >
+                            <div className="flex min-w-0 flex-1 flex-col gap-2">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <h4 className="truncate text-base font-semibold text-blue-600 transition-colors group-hover:text-blue-700 group-hover:underline">
+                                  {solution.displayName}
+                                </h4>
+                                <Badge
+                                  variant="outline"
+                                  className={`border px-2 py-0.5 text-[11px] font-medium ${
+                                    solution.isManaged
+                                      ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                                      : 'border-amber-200 bg-amber-50 text-amber-700'
+                                  }`}
+                                >
+                                  {solution.isManaged ? 'Managed' : 'Unmanaged'}
                                 </Badge>
-                              )}
-                            </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2">
-                              <div className="flex items-baseline gap-2 min-w-0">
-                                <span className="text-xs font-medium text-muted-foreground shrink-0">Name</span>
-                                <span className="text-xs font-mono text-foreground truncate">{solution.name}</span>
                               </div>
-                              <div className="flex items-baseline gap-2 min-w-0">
-                                <span className="text-xs font-medium text-muted-foreground shrink-0">Version</span>
-                                <span className="text-xs font-mono text-foreground">{solution.version}</span>
-                              </div>
-                              <div className="flex items-baseline gap-2 min-w-0">
-                                <span className="text-xs font-medium text-muted-foreground shrink-0">Publisher</span>
-                                <span className="text-xs text-foreground truncate" title={solution.publisher}>
-                                  {solution.publisher}
+                              <p className="text-sm text-muted-foreground">
+                                {solution.publisher ? `Publisher ${solution.publisher}` : 'Solution details'}
+                              </p>
+                              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                                <span className="flex items-center gap-1">
+                                  <span className="h-2 w-2 rounded-full bg-sky-500" />
+                                  <span className="font-mono text-foreground">{solution.name}</span>
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <span>Version</span>
+                                  <span className="font-medium text-foreground">{solution.version}</span>
                                 </span>
                               </div>
+                            </div>
+                            <div className="flex items-center gap-3 self-start text-xs text-muted-foreground sm:flex-col sm:items-end sm:gap-2 sm:self-stretch">
                               {solution.installedOn && (
-                                <div className="flex items-baseline gap-2 min-w-0">
-                                  <span className="text-xs font-medium text-muted-foreground shrink-0">Installed</span>
-                                  <span className="text-xs font-mono text-foreground">
-                                    {formatInstalledOn(solution.installedOn)}
-                                  </span>
+                                <div className="flex items-center gap-1 whitespace-nowrap">
+                                  <Clock3 className="h-3.5 w-3.5" />
+                                  <span className="font-medium text-foreground">{formatInstalledOn(solution.installedOn)}</span>
                                 </div>
                               )}
+                              <ExternalLink className="h-4 w-4 shrink-0 text-muted-foreground/70 transition-colors group-hover:text-blue-600" />
                             </div>
                           </div>
-                          <ExternalLink className="h-4 w-4 shrink-0 text-muted-foreground/60 transition-colors group-hover:text-primary" />
-                        </div>
+                        ))}
                       </div>
-                    ))}
+                    </div>
                   </div>
                 ) : (
                   <div className="text-center py-8">

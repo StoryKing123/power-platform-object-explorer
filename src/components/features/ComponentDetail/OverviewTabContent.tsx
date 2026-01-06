@@ -30,7 +30,7 @@ export const OverviewTabContent = ({
     <div className="space-y-4">
       {/* Description 区域 */}
       {component.description && (
-        <div className="rounded-lg border border-border bg-muted/60 p-3">
+        <div className="rounded-md border border-border bg-card p-3">
           <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
             Description
           </h3>
@@ -39,8 +39,8 @@ export const OverviewTabContent = ({
       )}
 
       {/* Basic Info 紧凑表格 */}
-      <div className="rounded-lg border border-border overflow-hidden">
-        <div className="bg-muted px-3 py-2 border-b border-border">
+      <div className="rounded-md border border-border overflow-hidden">
+        <div className="bg-secondary/50 px-3 py-2 border-b border-border">
           <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
             Basic Information
           </h3>
@@ -48,7 +48,7 @@ export const OverviewTabContent = ({
         <Table>
           <TableBody>
             {/* Type */}
-            <TableRow className="border-b-0 hover:bg-muted/50">
+            <TableRow className="border-b-0 hover:bg-secondary/30">
               <TableCell className="py-2 px-3 text-xs text-muted-foreground font-medium w-[30%]">
                 Type
               </TableCell>
@@ -56,7 +56,7 @@ export const OverviewTabContent = ({
             </TableRow>
 
             {/* Category */}
-            <TableRow className="border-b-0 hover:bg-muted/50">
+            <TableRow className="border-b-0 hover:bg-secondary/30">
               <TableCell className="py-2 px-3 text-xs text-muted-foreground font-medium">
                 Category
               </TableCell>
@@ -66,7 +66,7 @@ export const OverviewTabContent = ({
             </TableRow>
 
             {/* Status */}
-            <TableRow className="border-b-0 hover:bg-muted/50">
+            <TableRow className="border-b-0 hover:bg-secondary/30">
               <TableCell className="py-2 px-3 text-xs text-muted-foreground font-medium">
                 Status
               </TableCell>
@@ -81,7 +81,7 @@ export const OverviewTabContent = ({
             </TableRow>
 
             {/* Last Modified */}
-            <TableRow className="border-b-0 hover:bg-muted/50">
+            <TableRow className="border-b-0 hover:bg-secondary/30">
               <TableCell className="py-2 px-3 text-xs text-muted-foreground font-medium">
                 Last Modified
               </TableCell>
@@ -92,7 +92,7 @@ export const OverviewTabContent = ({
 
             {/* Flow Type (仅 Flow 类型显示) */}
             {isFlow(component) && (
-              <TableRow className="border-b-0 hover:bg-muted/50">
+              <TableRow className="border-b-0 hover:bg-secondary/30">
                 <TableCell className="py-2 px-3 text-xs text-muted-foreground font-medium">
                   Flow Type
                 </TableCell>

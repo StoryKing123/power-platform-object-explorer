@@ -12,7 +12,6 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarMenuBadge,
   SidebarHeader,
   SidebarSeparator,
 } from '@/components/ui/sidebar'
@@ -56,10 +55,9 @@ export const AppSidebar = ({
           </div>
         </div>
       </SidebarHeader>
-      <SidebarSeparator className="mx-0 opacity-60" />
       <SidebarContent className="px-2 pb-2 overflow-hidden">
         <SidebarGroup className="flex min-h-0 flex-1 flex-col p-0">
-          <SidebarGroupLabel className="px-2 text-[11px] font-semibold uppercase tracking-wider text-sidebar-foreground/60">
+          <SidebarGroupLabel className="px-2 text-[11px] font-semibold uppercase tracking-wider text-sidebar-foreground/60 group-data-[collapsible=icon]:!mt-0">
             Categories
           </SidebarGroupLabel>
           <SidebarGroupContent className="flex min-h-0 flex-1 flex-col">
@@ -79,14 +77,16 @@ export const AppSidebar = ({
                         <SidebarMenuButton
                           isActive={selectedCategory === category.id}
                           onClick={() => onCategoryChange(category.id)}
-                          className="h-8 rounded-md px-2"
+                          className="h-7 rounded-md px-2 text-xs"
                           tooltip={category.name}
                         >
-                          <Icon className="h-4 w-4 shrink-0" />
-                          <span className="flex-1 group-data-[collapsible=icon]:hidden">{category.name}</span>
-                          <SidebarMenuBadge>
+                          <Icon className="h-4 w-4 shrink-0 hidden group-data-[collapsible=icon]:block" />
+                          <span className="min-w-0 flex-1 truncate group-data-[collapsible=icon]:hidden">
+                            {category.name}
+                          </span>
+                          <span className="shrink-0 tabular-nums text-muted-foreground group-data-[collapsible=icon]:hidden">
                             {category.count}
-                          </SidebarMenuBadge>
+                          </span>
                         </SidebarMenuButton>
                       </SidebarMenuItem>
                     )
