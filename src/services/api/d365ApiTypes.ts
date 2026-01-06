@@ -383,3 +383,32 @@ export interface ChoiceOption {
   label: string
   description?: string
 }
+
+// Environment Variable Definition
+export interface EnvironmentVariableDefinition {
+  environmentvariabledefinitionid: string
+  schemaname: string
+  displayname?: string
+  description?: string
+  defaultvalue?: string
+  type: number // 100000000=String, 100000001=Number, 100000002=Boolean, 100000003=JSON, 100000004=DataSource, 100000005=Secret
+  isrequired?: boolean
+  statecode?: number
+  statuscode?: number
+  modifiedon?: string
+}
+
+// Environment Variable Value
+export interface EnvironmentVariableValue {
+  environmentvariablevalueid: string
+  value: string
+  environmentvariabledefinitionid: string
+}
+
+// Environment Variable Info for UI (combines definition and value)
+export interface EnvironmentVariableInfo {
+  defaultValue?: string
+  currentValue?: string
+  type: number
+  typeName: string
+}

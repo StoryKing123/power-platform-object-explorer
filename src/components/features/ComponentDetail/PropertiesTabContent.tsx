@@ -185,16 +185,16 @@ export const PropertiesTabContent = ({ metadata }: PropertiesTabContentProps) =>
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.2 }}
-      className="space-y-2"
+      className="space-y-3"
     >
       <Accordion type="multiple" defaultValue={['identification', 'typeCategory']} className="w-full">
         {propertyGroups.map((group) => (
           <AccordionItem
             key={group.id}
             value={group.id}
-            className="border-border mb-2 rounded-lg overflow-hidden"
+            className="border border-border/50 bg-card/40 backdrop-blur-md rounded-lg overflow-hidden mb-3 last:mb-0"
           >
-            <AccordionTrigger className="py-2 px-3 hover:bg-muted/50 hover:no-underline rounded-t">
+            <AccordionTrigger className="py-3 px-4 hover:bg-muted/30 hover:no-underline transition-colors">
               <div className="flex items-center gap-2.5">
                 <group.icon className="h-4 w-4 text-muted-foreground shrink-0" />
                 <span className="text-sm font-semibold text-foreground">{group.title}</span>
@@ -203,7 +203,7 @@ export const PropertiesTabContent = ({ metadata }: PropertiesTabContentProps) =>
                 </Badge>
               </div>
             </AccordionTrigger>
-            <AccordionContent className="pb-0 pt-0 px-0">
+            <AccordionContent className="pb-0 pt-0 px-0 border-t border-border/40">
               <PropertyTable properties={group.properties} />
             </AccordionContent>
           </AccordionItem>

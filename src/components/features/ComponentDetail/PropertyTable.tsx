@@ -14,24 +14,24 @@ interface PropertyTableProps {
  */
 export const PropertyTable = ({ properties }: PropertyTableProps) => {
   return (
-    <Table className="border-t">
+    <Table>
       <TableHeader>
-        <TableRow className="hover:bg-transparent border-b-0">
-          <TableHead className="w-[35%] h-8 px-3 text-xs font-medium">Property</TableHead>
-          <TableHead className="h-8 px-3 text-xs font-medium">Value</TableHead>
-          <TableHead className="w-10 h-8"></TableHead>
+        <TableRow className="hover:bg-muted/20 border-b border-border/40">
+          <TableHead className="w-[35%] h-9 px-4 text-xs font-semibold text-muted-foreground">Property</TableHead>
+          <TableHead className="h-9 px-4 text-xs font-semibold text-muted-foreground">Value</TableHead>
+          <TableHead className="w-10 h-9"></TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {properties.map(({ key, value }) => (
-          <TableRow key={key} className="border-b-0 hover:bg-muted/50 group">
-            <TableCell className="py-1.5 px-3 text-xs text-muted-foreground font-medium align-middle">
+          <TableRow key={key} className="border-b border-border/30 last:border-b-0 hover:bg-muted/30 group transition-colors">
+            <TableCell className="py-2 px-4 text-xs text-muted-foreground font-medium align-middle">
               {key}
             </TableCell>
-            <TableCell className="py-1.5 px-3 align-middle">
+            <TableCell className="py-2 px-4 align-middle">
               <PropertyValueCell value={value} propertyKey={key} />
             </TableCell>
-            <TableCell className="py-1.5 px-1 align-middle">
+            <TableCell className="py-2 px-1 align-middle">
               <CopyButton value={value} />
             </TableCell>
           </TableRow>

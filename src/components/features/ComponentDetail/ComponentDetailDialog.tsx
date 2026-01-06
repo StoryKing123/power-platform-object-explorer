@@ -15,9 +15,10 @@ import { formatInstalledOn } from '@/utils/formatters'
 import { fetchComponentSolutions } from '@/services/dataServices/solutionService'
 import { fetchFlowDetails } from '@/services/dataServices/flowService'
 import { fetchChoiceOptions } from '@/services/dataServices/choiceService'
+import { fetchEnvironmentVariableInfo } from '@/services/dataServices/environmentVariableService'
 import { getEnvironmentId } from '@/services/dataServices/environmentService'
 import { getFlowType } from '@/services/transformers/componentTransformer'
-import type { Workflow, ChoiceOption } from '@/services/api/d365ApiTypes'
+import type { Workflow, ChoiceOption, EnvironmentVariableInfo } from '@/services/api/d365ApiTypes'
 import { toast } from 'sonner'
 import { PropertiesTabContent } from './PropertiesTabContent'
 import { OverviewTabContent } from './OverviewTabContent'
@@ -43,6 +44,8 @@ export const ComponentDetailDialog = ({
   const [loadingFlowDetails, setLoadingFlowDetails] = useState(false)
   const [choiceOptions, setChoiceOptions] = useState<ChoiceOption[]>([])
   const [loadingChoiceOptions, setLoadingChoiceOptions] = useState(false)
+  const [envVarInfo, setEnvVarInfo] = useState<EnvironmentVariableInfo | null>(null)
+  const [loadingEnvVarInfo, setLoadingEnvVarInfo] = useState(false)
 
   const sortedComponentSolutions = useMemo(() => {
     const getInstalledTime = (installedOn?: string) => {
@@ -65,6 +68,10 @@ export const ComponentDetailDialog = ({
 
   const isChoice = (component: Component): boolean => {
     return component.category === 'choices' || component.type === 'Choice'
+  }
+
+  const isEnvironmentVariable = (component: Component): boolean => {
+    return component.category === 'environmentvariables' || component.type === 'Environment Variable Definition'
   }
 
   const openSolutionInPowerPlatform = async (solution: Solution) => {
@@ -166,6 +173,35 @@ export const ComponentDetailDialog = ({
       })
   }, [component])
 
+  // 获取环境变量的值
+  useEffect(() => {
+    if (!component || !isEnvironmentVariable(component)) {
+      setEnvVarInfo(null)
+      return
+    }
+
+    const definitionId = component.id // msdyn_objectid 是 environmentvariabledefinitionid
+    if (!definitionId) {
+      console.warn('Environment Variable component missing definitionId')
+      return
+    }
+
+    setLoadingEnvVarInfo(true)
+    fetchEnvironmentVariableInfo(definitionId)
+      .then(info => {
+        setEnvVarInfo(info)
+      })
+      .catch(error => {
+        console.error('Failed to fetch environment variable info:', error)
+        toast.error('Failed to load environment variable values', {
+          description: error instanceof Error ? error.message : 'Could not retrieve environment variable values'
+        })
+      })
+      .finally(() => {
+        setLoadingEnvVarInfo(false)
+      })
+  }, [component])
+
   useEffect(() => {
     if (component) {
       setComponentSolutions(component.solutions || [])
@@ -218,10 +254,13 @@ export const ComponentDetailDialog = ({
                   loadingFlowDetails={loadingFlowDetails}
                   choiceOptions={choiceOptions}
                   loadingChoiceOptions={loadingChoiceOptions}
+                  envVarInfo={envVarInfo}
+                  loadingEnvVarInfo={loadingEnvVarInfo}
                   getStatusVariant={getStatusVariant}
                   getFlowType={getFlowType}
                   isFlow={isFlow}
                   isChoice={isChoice}
+                  isEnvironmentVariable={isEnvironmentVariable}
                 />
               </TabsContent>
 
