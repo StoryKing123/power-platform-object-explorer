@@ -14,9 +14,10 @@ import { getIconComponent, getStatusVariant, isFlow } from '@/utils/componentHel
 import { formatInstalledOn } from '@/utils/formatters'
 import { fetchComponentSolutions } from '@/services/dataServices/solutionService'
 import { fetchFlowDetails } from '@/services/dataServices/flowService'
+import { fetchChoiceOptions } from '@/services/dataServices/choiceService'
 import { getEnvironmentId } from '@/services/dataServices/environmentService'
 import { getFlowType } from '@/services/transformers/componentTransformer'
-import type { Workflow } from '@/services/api/d365ApiTypes'
+import type { Workflow, ChoiceOption } from '@/services/api/d365ApiTypes'
 import { toast } from 'sonner'
 import { PropertiesTabContent } from './PropertiesTabContent'
 import { OverviewTabContent } from './OverviewTabContent'
@@ -40,6 +41,8 @@ export const ComponentDetailDialog = ({
   const [loadingSolutions, setLoadingSolutions] = useState(false)
   const [flowDetails, setFlowDetails] = useState<Workflow | null>(null)
   const [loadingFlowDetails, setLoadingFlowDetails] = useState(false)
+  const [choiceOptions, setChoiceOptions] = useState<ChoiceOption[]>([])
+  const [loadingChoiceOptions, setLoadingChoiceOptions] = useState(false)
 
   const sortedComponentSolutions = useMemo(() => {
     const getInstalledTime = (installedOn?: string) => {
@@ -59,6 +62,10 @@ export const ComponentDetailDialog = ({
       return a.displayName.localeCompare(b.displayName)
     })
   }, [componentSolutions])
+
+  const isChoice = (component: Component): boolean => {
+    return component.category === 'choices' || component.type === 'Choice'
+  }
 
   const openSolutionInPowerPlatform = async (solution: Solution) => {
     if (!solution?.id || solution.id === 'default') {
@@ -130,6 +137,35 @@ export const ComponentDetailDialog = ({
       })
   }, [component])
 
+  // 获取 Choice 选项
+  useEffect(() => {
+    if (!component || !isChoice(component)) {
+      setChoiceOptions([])
+      return
+    }
+
+    const metadataId = component.id // msdyn_objectid 是 MetadataId
+    if (!metadataId) {
+      console.warn('Choice component missing MetadataId')
+      return
+    }
+
+    setLoadingChoiceOptions(true)
+    fetchChoiceOptions(metadataId)
+      .then(options => {
+        setChoiceOptions(options)
+      })
+      .catch(error => {
+        console.error('Failed to fetch choice options:', error)
+        toast.error('Failed to load choice options', {
+          description: error instanceof Error ? error.message : 'Could not retrieve option values'
+        })
+      })
+      .finally(() => {
+        setLoadingChoiceOptions(false)
+      })
+  }, [component])
+
   useEffect(() => {
     if (component) {
       setComponentSolutions(component.solutions || [])
@@ -180,9 +216,12 @@ export const ComponentDetailDialog = ({
                   component={component}
                   flowDetails={flowDetails}
                   loadingFlowDetails={loadingFlowDetails}
+                  choiceOptions={choiceOptions}
+                  loadingChoiceOptions={loadingChoiceOptions}
                   getStatusVariant={getStatusVariant}
                   getFlowType={getFlowType}
                   isFlow={isFlow}
+                  isChoice={isChoice}
                 />
               </TabsContent>
 

@@ -353,3 +353,33 @@ export interface ApiError {
   statusCode?: number
   retryable: boolean
 }
+
+// Global OptionSet (Choice) Definition
+export interface GlobalOptionSetDefinition {
+  MetadataId: string
+  Name: string
+  DisplayName?: Label
+  Description?: Label
+  IsGlobal: boolean
+  IsManaged: boolean
+  IsCustomOptionSet: boolean
+  OptionSetType?: string
+  Options?: OptionMetadata[]
+}
+
+// Option Metadata
+export interface OptionMetadata {
+  Value: number
+  Label?: Label
+  Description?: Label
+  Color?: string
+  IsManaged?: boolean
+  ExternalValue?: string
+}
+
+// Simplified Option for UI display
+export interface ChoiceOption {
+  value: number
+  label: string
+  description?: string
+}

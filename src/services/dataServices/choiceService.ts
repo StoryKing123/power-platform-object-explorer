@@ -2,7 +2,7 @@
 
 import { d365ApiClient } from '../api/d365ApiClient'
 import { D365_API_CONFIG } from '../api/d365ApiConfig'
-import type { SolutionComponentSummary, ODataResponse, ODataParams } from '../api/d365ApiTypes'
+import type { SolutionComponentSummary, ODataResponse, ODataParams, GlobalOptionSetDefinition, ChoiceOption } from '../api/d365ApiTypes'
 import { buildSolutionComponentSummarySearchClause, getDefaultSolutionId, handleWorkflowIdUniqueUnsupported } from './searchService'
 import { getCategoryTypeFilter } from './componentCountService'
 
@@ -106,5 +106,36 @@ export async function getChoiceCount(): Promise<number> {
   } catch (error) {
     console.warn('Failed to get choice count:', error)
     return 0
+  }
+}
+
+/**
+ * 获取 Choice 的选项列表
+ * 从 GlobalOptionSetDefinitions 端点获取 OptionSet 元数据，包含所有选项的 Label 和 Value
+ */
+export async function fetchChoiceOptions(metadataId: string): Promise<ChoiceOption[]> {
+  try {
+    const response = await d365ApiClient.get<GlobalOptionSetDefinition>(
+      `GlobalOptionSetDefinitions(${metadataId})`
+    )
+
+    // 转换为 UI 友好的格式
+    if (!response.Options || response.Options.length === 0) {
+      return []
+    }
+
+    return response.Options
+      .map(option => ({
+        value: option.Value,
+        label: option.Label?.UserLocalizedLabel?.Label ||
+               option.Label?.LocalizedLabels?.[0]?.Label ||
+               `Option ${option.Value}`,
+        description: option.Description?.UserLocalizedLabel?.Label
+      }))
+      .sort((a, b) => a.value - b.value) // 按值升序排序
+
+  } catch (error) {
+    console.error('Failed to fetch choice options:', error)
+    throw error
   }
 }
