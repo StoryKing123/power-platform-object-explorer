@@ -4,13 +4,15 @@ import { d365ApiClient } from '../api/d365ApiClient'
 import { D365_API_CONFIG } from '../api/d365ApiConfig'
 import type { SolutionComponentSummary, ODataResponse, ODataParams } from '../api/d365ApiTypes'
 import { buildSolutionComponentSummarySearchClause, getDefaultSolutionId, handleWorkflowIdUniqueUnsupported } from './searchService'
+import { getCategoryTypeFilter } from './componentCountService'
 
 /**
  * 构建 Connection Reference 的 filter 条件
  * componenttype=10150 表示 Connection Reference
  */
-function buildConnectionReferenceFilter(solutionId: string, searchQuery?: string): string {
-  const connectionReferenceTypeFilter = 'msdyn_componenttype eq 10150'
+async function buildConnectionReferenceFilter(searchQuery?: string): Promise<string> {
+  const connectionReferenceTypeFilter = await getCategoryTypeFilter('connectionreferences', [10150])
+  const solutionId = await getDefaultSolutionId()
   const solutionFilter = `msdyn_solutionid eq ${solutionId}`
   const baseFilter = `${connectionReferenceTypeFilter} and ${solutionFilter}`
 
@@ -28,10 +30,10 @@ export async function fetchConnectionReferences(
   pageSize: number = D365_API_CONFIG.pagination.defaultPageSize,
   skip?: number
 ): Promise<ODataResponse<SolutionComponentSummary>> {
-  const solutionId = await getDefaultSolutionId()
+  const filter = await buildConnectionReferenceFilter()
 
   const params: ODataParams = {
-    $filter: buildConnectionReferenceFilter(solutionId),
+    $filter: filter,
     $orderby: 'msdyn_displayname asc',
     $top: pageSize,
   }
@@ -58,10 +60,10 @@ export async function searchConnectionReferences(
     }
   }
 
-  const solutionId = await getDefaultSolutionId()
+  const filter = await buildConnectionReferenceFilter(query)
 
   const params: ODataParams = {
-    $filter: buildConnectionReferenceFilter(solutionId, query),
+    $filter: filter,
     $orderby: 'msdyn_displayname asc',
     $top: pageSize,
   }
@@ -86,18 +88,21 @@ export async function searchConnectionReferences(
 export async function getConnectionReferenceCount(): Promise<number> {
   try {
     const solutionId = await getDefaultSolutionId()
+    const typeFilter = await getCategoryTypeFilter('connectionreferences', [10150])
     const response = await d365ApiClient.getCollection<any>(
       D365_API_CONFIG.endpoints.solutionComponentCountSummaries,
       {
         $select: 'msdyn_componenttype,msdyn_total',
-        $filter: `msdyn_solutionid eq ${solutionId} and msdyn_componenttype eq 10150`,
+        $filter: `${typeFilter} and msdyn_solutionid eq ${solutionId}`,
       },
       'v9.0'
     )
 
-    // 获取 componenttype=10150 (Connection Reference) 的数量
-    const connectionReferenceRow = response.value?.find((row: any) => row.msdyn_componenttype === 10150)
-    return connectionReferenceRow?.msdyn_total || 0
+    let count = 0
+    for (const row of response.value || []) {
+      count += typeof row.msdyn_total === 'number' ? row.msdyn_total : 0
+    }
+    return count
   } catch (error) {
     console.warn('Failed to get connection reference count:', error)
     return 0

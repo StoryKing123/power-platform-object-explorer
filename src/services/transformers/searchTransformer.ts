@@ -4,9 +4,9 @@ import type { Component } from '@/data/mockData'
 import type { SolutionComponentSummary } from '@/services/api/d365ApiTypes'
 
 /**
- * Get category name from component type code
+ * Get category name from component summary data
  */
-function getCategoryFromComponentType(componentType: number): string {
+function getCategoryFromComponentType(result: SolutionComponentSummary): string {
   const categoryMap: Record<number, string> = {
     1: 'entities',
     80: 'apps',    // Model-driven App
@@ -19,14 +19,29 @@ function getCategoryFromComponentType(componentType: number): string {
     380: 'environmentvariables',  // Environment Variable Definition
     381: 'environmentvariables',  // Environment Variable Value
   }
-  return categoryMap[componentType] || 'unknown'
+  const fromType = categoryMap[result.msdyn_componenttype]
+  if (fromType) return fromType
+
+  const logicalName = (result.msdyn_componentlogicalname || '').toLowerCase()
+  if (logicalName === 'entity') return 'entities'
+  if (logicalName === 'appmodule' || logicalName === 'canvasapp') return 'apps'
+  if (logicalName === 'role') return 'securityroles'
+  if (logicalName === 'optionset') return 'choices'
+  if (logicalName === 'connectionreference') return 'connectionreferences'
+  if (logicalName === 'connector') return 'connectors'
+  if (logicalName === 'environmentvariabledefinition' || logicalName === 'environmentvariablevalue') return 'environmentvariables'
+  if ((logicalName === 'workflow' || logicalName === 'flow') && (result.msdyn_workflowcategory === 5 || result.msdyn_workflowcategory === '5')) {
+    return 'flows'
+  }
+
+  return 'unknown'
 }
 
 /**
  * Get component type label from component type code
  * 根据 componentType 和 subtype 获取组件类型标签
  */
-function getComponentTypeLabel(componentType: number, subtype?: number | string | null): string {
+function getComponentTypeLabel(componentType: number, subtype?: number | string | null, componentTypeName?: string): string {
   // Canvas App 的 subtype 处理
   if (componentType === 300) {
     if (subtype === 0 || subtype === '0') {
@@ -49,7 +64,7 @@ function getComponentTypeLabel(componentType: number, subtype?: number | string 
     380: 'Environment Variable Definition',
     381: 'Environment Variable Value',
   }
-  return labelMap[componentType] || 'Component'
+  return labelMap[componentType] || componentTypeName || 'Component'
 }
 
 /**
@@ -72,8 +87,8 @@ export function transformSearchResult(result: SolutionComponentSummary): Compone
   return {
     id: result.msdyn_objectid,
     name: result.msdyn_displayname || result.msdyn_name,
-    type: getComponentTypeLabel(result.msdyn_componenttype, result.msdyn_subtype),
-    category: getCategoryFromComponentType(result.msdyn_componenttype),
+    type: getComponentTypeLabel(result.msdyn_componenttype, result.msdyn_subtype, result.msdyn_componenttypename),
+    category: getCategoryFromComponentType(result),
     status: 'active', // Search results don't include status, default to active
     lastModified: result.msdyn_modifiedon ? formatDate(result.msdyn_modifiedon) : 'N/A',
     description: result.msdyn_description || `${result.msdyn_componenttypename}: ${result.msdyn_name}`,

@@ -4,24 +4,22 @@ import { d365ApiClient } from '../api/d365ApiClient'
 import { D365_API_CONFIG } from '../api/d365ApiConfig'
 import type { SolutionComponentSummary, ODataResponse, ODataParams } from '../api/d365ApiTypes'
 import { getDefaultSolutionId } from './searchService'
+import { getCategoryTypeFilter } from './componentCountService'
 
 /**
- * 构建 App 的 filter 条件
- * 包括 Canvas App (componenttype=300, subtype=0或4) 和 Model-driven App (componenttype=80)
+ * 构建 App 的 filter 条件，只保留 componenttype 过滤
  */
-function buildAppFilter(solutionId: string, searchQuery?: string): string {
-  // Canvas App: componenttype=300 且 subtype=0(Classic) 或 4(Modern)
-  // Model-driven App: componenttype=80
-  const appTypeFilter = '((msdyn_componenttype eq 300 and (msdyn_subtype eq \'0\' or msdyn_subtype eq \'4\')) or (msdyn_componenttype eq 80))'
+async function buildAppFilter(solutionId: string, searchQuery?: string): Promise<string> {
+  const appTypeFilter = await getCategoryTypeFilter('apps', [300, 80])
   const solutionFilter = `msdyn_solutionid eq ${solutionId}`
 
   if (searchQuery && searchQuery.trim()) {
     const sanitizedQuery = searchQuery.replace(/'/g, "''").trim()
     const searchFilter = `(contains(msdyn_name, '${sanitizedQuery}') or contains(msdyn_displayname, '${sanitizedQuery}'))`
-    return `${appTypeFilter} and ${searchFilter}`
+    return `${appTypeFilter} and ${solutionFilter} and ${searchFilter}`
   }
 
-  return appTypeFilter
+  return `${appTypeFilter} and ${solutionFilter}`
 }
 
 /**
@@ -32,9 +30,10 @@ export async function fetchApps(
   skip?: number
 ): Promise<ODataResponse<SolutionComponentSummary>> {
   const solutionId = await getDefaultSolutionId()
+  const filter = await buildAppFilter(solutionId)
 
   const params: ODataParams = {
-    $filter: buildAppFilter(solutionId),
+    $filter: filter,
     $orderby: 'msdyn_displayname asc',
     $top: pageSize,
   }
@@ -62,9 +61,10 @@ export async function searchApps(
   }
 
   const solutionId = await getDefaultSolutionId()
+  const filter = await buildAppFilter(solutionId, query)
 
   const params: ODataParams = {
-    $filter: buildAppFilter(solutionId, query),
+    $filter: filter,
     $orderby: 'msdyn_displayname asc',
     $top: pageSize,
   }
@@ -83,24 +83,19 @@ export async function searchApps(
 export async function getAppCount(): Promise<number> {
   try {
     const solutionId = await getDefaultSolutionId()
+    const typeFilter = await getCategoryTypeFilter('apps', [300, 80])
     const response = await d365ApiClient.getCollection<any>(
       D365_API_CONFIG.endpoints.solutionComponentCountSummaries,
       {
         $select: 'msdyn_componenttype,msdyn_total,msdyn_subtype',
-        $filter: `msdyn_solutionid eq ${solutionId}`,
+        $filter: `${typeFilter} and msdyn_solutionid eq ${solutionId}`,
       },
       'v9.0'
     )
 
-    // 计算 Canvas App (componenttype=300) 和 Model-driven App (componenttype=80) 的数量
-    let count = 0
-    for (const row of response.value || []) {
-      if (row.msdyn_componenttype === 300 || row.msdyn_componenttype === 80) {
-        count += typeof row.msdyn_total === 'number' ? row.msdyn_total : 0
-      }
-    }
-
-    return count
+    return (response.value || []).reduce((sum: number, row: any) => {
+      return sum + (typeof row.msdyn_total === 'number' ? row.msdyn_total : 0)
+    }, 0)
   } catch (error) {
     console.warn('Failed to get app count:', error)
     return 0

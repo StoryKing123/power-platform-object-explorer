@@ -4,13 +4,14 @@ import { d365ApiClient } from '../api/d365ApiClient'
 import { D365_API_CONFIG } from '../api/d365ApiConfig'
 import type { SolutionComponentSummary, ODataResponse, ODataParams } from '../api/d365ApiTypes'
 import { getDefaultSolutionId } from './searchService'
+import { getCategoryTypeFilter } from './componentCountService'
 
 /**
  * 构建 SecurityRole 的 filter 条件
  * componenttype=20 表示 Role
  */
-function buildSecurityRoleFilter(solutionId: string, searchQuery?: string): string {
-  const roleTypeFilter = 'msdyn_componenttype eq 20'
+async function buildSecurityRoleFilter(solutionId: string, searchQuery?: string): Promise<string> {
+  const roleTypeFilter = await getCategoryTypeFilter('securityroles', [20])
   const solutionFilter = `msdyn_solutionid eq ${solutionId}`
   const baseFilter = `${roleTypeFilter} and ${solutionFilter}`
 
@@ -31,9 +32,10 @@ export async function fetchSecurityRoles(
   skip?: number
 ): Promise<ODataResponse<SolutionComponentSummary>> {
   const solutionId = await getDefaultSolutionId()
+  const filter = await buildSecurityRoleFilter(solutionId)
 
   const params: ODataParams = {
-    $filter: buildSecurityRoleFilter(solutionId),
+    $filter: filter,
     $orderby: 'msdyn_displayname asc',
     $top: pageSize,
   }
@@ -61,9 +63,10 @@ export async function searchSecurityRoles(
   }
 
   const solutionId = await getDefaultSolutionId()
+  const filter = await buildSecurityRoleFilter(solutionId, query)
 
   const params: ODataParams = {
-    $filter: buildSecurityRoleFilter(solutionId, query),
+    $filter: filter,
     $orderby: 'msdyn_displayname asc',
     $top: pageSize,
   }
@@ -81,17 +84,21 @@ export async function searchSecurityRoles(
 export async function getSecurityRoleCount(): Promise<number> {
   try {
     const solutionId = await getDefaultSolutionId()
+    const typeFilter = await getCategoryTypeFilter('securityroles', [20])
     const response = await d365ApiClient.getCollection<any>(
       D365_API_CONFIG.endpoints.solutionComponentCountSummaries,
       {
         $select: 'msdyn_componenttype,msdyn_total',
-        $filter: `msdyn_solutionid eq ${solutionId} and msdyn_componenttype eq 20`,
+        $filter: `${typeFilter} and msdyn_solutionid eq ${solutionId}`,
       },
       'v9.0'
     )
 
-    const roleRow = response.value?.find((row: any) => row.msdyn_componenttype === 20)
-    return roleRow?.msdyn_total || 0
+    let count = 0
+    for (const row of response.value || []) {
+      count += typeof row.msdyn_total === 'number' ? row.msdyn_total : 0
+    }
+    return count
   } catch (error) {
     console.warn('Failed to get security role count:', error)
     return 0

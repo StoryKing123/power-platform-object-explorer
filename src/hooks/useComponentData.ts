@@ -76,13 +76,14 @@ export function useComponentData(
         switch (category) {
           case 'all': {
             // Fetch all components in a single query without componenttype filter
-            const solutionId = await getDefaultSolutionId()
-
             const params: ODataParams = {
-              $filter: `msdyn_solutionid eq ${solutionId}`,
+              $filter: '',
               $orderby: 'msdyn_displayname asc',
               $top: pageSize,
             }
+
+            const solutionId = await getDefaultSolutionId()
+            params.$filter = `msdyn_solutionid eq ${solutionId}`
 
             // Add search filter if provided
             if (searchQuery && searchQuery.trim()) {

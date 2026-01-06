@@ -154,7 +154,7 @@ export async function getDefaultSolutionId(): Promise<string> {
 
 /**
  * Build OData filter for component search
- * Constructs filter with solution ID, search query, and optional component types
+ * Constructs filter with search query, solution scope, and optional component types
  */
 function buildSearchFilter(
   solutionId: string,
@@ -174,6 +174,22 @@ function buildSearchFilter(
   }
 
   return `${solutionFilter} and ${searchFilter}`
+}
+
+async function resolveComponentTypes(category: string): Promise<number[] | undefined> {
+  if (category === 'all') return undefined
+
+  try {
+    const { getCategoryComponentTypes } = await import('./componentCountService')
+    const dynamicTypes = await getCategoryComponentTypes(category as any)
+    if (dynamicTypes && dynamicTypes.length > 0) {
+      return dynamicTypes
+    }
+  } catch (error) {
+    console.warn('Failed to resolve component types from counts, falling back to defaults:', error)
+  }
+
+  return CATEGORY_COMPONENT_TYPES[category]
 }
 
 /**
@@ -204,7 +220,7 @@ export async function searchComponents(
     const solutionId = await fetchDefaultSolutionIdInternal()
 
     // Get component types for the category
-    const componentTypes = category === 'all' ? undefined : CATEGORY_COMPONENT_TYPES[category]
+    const componentTypes = await resolveComponentTypes(category)
 
     // Build filter
     const filter = buildSearchFilter(solutionId, query, componentTypes)

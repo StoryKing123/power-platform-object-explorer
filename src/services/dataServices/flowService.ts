@@ -4,15 +4,16 @@ import { d365ApiClient } from '../api/d365ApiClient'
 import { D365_API_CONFIG } from '../api/d365ApiConfig'
 import type { SolutionComponentSummary, ODataResponse, ODataParams, Workflow } from '../api/d365ApiTypes'
 import { buildSolutionComponentSummarySearchClause, getDefaultSolutionId, handleWorkflowIdUniqueUnsupported } from './searchService'
+import { getCategoryTypeFilter } from './componentCountService'
 
 /**
- * 构建 Flow 的 filter 条件
- * componenttype=29 表示 Workflow, workflowcategory='5' 表示 Modern Flow (Power Automate)
+ * 构建 Flow 的 filter 条件（componenttype=29 且 workflowcategory=5）
  */
-function buildFlowFilter(solutionId: string, searchQuery?: string): string {
-  const flowTypeFilter = "msdyn_componenttype eq 29 and msdyn_workflowcategory eq '5'"
+async function buildFlowFilter(solutionId: string, searchQuery?: string): Promise<string> {
+  const flowTypeFilter = await getCategoryTypeFilter('flows', [29])
+  const flowCategoryFilter = "msdyn_workflowcategory eq '5'"
   const solutionFilter = `msdyn_solutionid eq ${solutionId}`
-  const baseFilter = `${flowTypeFilter} and ${solutionFilter}`
+  const baseFilter = `${flowTypeFilter} and ${flowCategoryFilter} and ${solutionFilter}`
 
   if (searchQuery && searchQuery.trim()) {
     return `${baseFilter} and ${buildSolutionComponentSummarySearchClause(searchQuery)}`
@@ -29,9 +30,10 @@ export async function fetchFlows(
   skip?: number
 ): Promise<ODataResponse<SolutionComponentSummary>> {
   const solutionId = await getDefaultSolutionId()
+  const filter = await buildFlowFilter(solutionId)
 
   const params: ODataParams = {
-    $filter: buildFlowFilter(solutionId),
+    $filter: filter,
     $orderby: 'msdyn_displayname asc',
     $top: pageSize,
   }
@@ -59,9 +61,10 @@ export async function searchFlows(
   }
 
   const solutionId = await getDefaultSolutionId()
+  const filter = await buildFlowFilter(solutionId, query)
 
   const params: ODataParams = {
-    $filter: buildFlowFilter(solutionId, query),
+    $filter: filter,
     $orderby: 'msdyn_displayname asc',
     $top: pageSize,
   }
@@ -86,20 +89,23 @@ export async function searchFlows(
 export async function getFlowCount(): Promise<number> {
   try {
     const solutionId = await getDefaultSolutionId()
+    const typeFilter = await getCategoryTypeFilter('flows', [29])
     const response = await d365ApiClient.getCollection<any>(
       D365_API_CONFIG.endpoints.solutionComponentCountSummaries,
       {
         $select: 'msdyn_componenttype,msdyn_total,msdyn_workflowcategory',
-        $filter: `msdyn_solutionid eq ${solutionId} and msdyn_componenttype eq 29 and msdyn_workflowcategory eq '5'`,
+        $filter: `${typeFilter} and msdyn_workflowcategory eq '5' and msdyn_solutionid eq ${solutionId}`,
       },
       'v9.0'
     )
 
-    // 获取 componenttype=29 (Workflow) 且 workflowcategory='5' (Modern Flow) 的数量
-    const flowRow = response.value?.find((row: any) =>
-      row.msdyn_componenttype === 29 && (row.msdyn_workflowcategory === 5 || row.msdyn_workflowcategory === '5')
-    )
-    return flowRow?.msdyn_total || 0
+    let count = 0
+    for (const row of response.value || []) {
+      if (row.msdyn_workflowcategory === 5 || row.msdyn_workflowcategory === '5') {
+        count += typeof row.msdyn_total === 'number' ? row.msdyn_total : 0
+      }
+    }
+    return count
   } catch (error) {
     console.warn('Failed to get flow count:', error)
     return 0
