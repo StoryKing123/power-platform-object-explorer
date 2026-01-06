@@ -29,14 +29,7 @@ function App() {
     debouncedSearchQuery
   )
 
-  const updatedCategories = useMemo(() => {
-    return categories.map(cat => ({
-      ...cat,
-      count: cat.id === selectedCategory ? totalCount : cat.count
-    }))
-  }, [categories, selectedCategory, totalCount])
-
-  const currentCategoryName = updatedCategories.find(c => c.id === selectedCategory)?.name || 'All Components'
+  const currentCategoryName = categories.find(c => c.id === selectedCategory)?.name || 'All Components'
 
   // 搜索查询防抖
   useEffect(() => {
@@ -93,7 +86,7 @@ function App() {
       <div className="flex h-full overflow-hidden">
         <SidebarProvider>
           <AppSidebar
-            categories={updatedCategories}
+            categories={categories}
             categoriesLoading={categoriesLoading}
             selectedCategory={selectedCategory}
             onCategoryChange={handleCategoryChange}
@@ -136,7 +129,7 @@ function App() {
           <CommandPalette
             open={commandOpen}
             darkMode={darkMode}
-            categories={updatedCategories}
+            categories={categories}
             searchQuery={searchQuery}
             onOpenChange={setCommandOpen}
             onRefresh={refresh}
@@ -147,7 +140,7 @@ function App() {
 
           <ComponentDetailDialog
             component={selectedComponent}
-            categories={updatedCategories}
+            categories={categories}
             onClose={() => setSelectedComponent(null)}
           />
         </SidebarProvider>

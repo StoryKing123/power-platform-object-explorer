@@ -405,13 +405,19 @@ export function useComponentData(
   }, [category, searchQuery])
 
   /**
-   * 异步获取分类数量，不阻塞组件数据加载
+   * Fetch category total count asynchronously (only when NOT searching)
+   * During search, totalCount is set to loaded results count in loadData()
    */
   useEffect(() => {
-    // 重置数量为 0，避免显示旧数据
+    // Reset count to 0 to avoid showing stale data
     setTotalCount(0)
 
-    // 异步加载数量，不阻塞数据展示
+    // Skip fetching category count during search - totalCount will be set to results count
+    if (searchQuery && searchQuery.trim()) {
+      return
+    }
+
+    // Async load count for non-search views
     let cancelled = false
 
     fetchCategoryCount().then(count => {
@@ -428,7 +434,7 @@ export function useComponentData(
     return () => {
       cancelled = true
     }
-  }, [category, fetchCategoryCount])
+  }, [category, searchQuery, fetchCategoryCount])
 
   return {
     data,
