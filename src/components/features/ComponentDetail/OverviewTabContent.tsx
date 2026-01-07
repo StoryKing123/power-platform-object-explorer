@@ -3,7 +3,7 @@ import { Loader2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import type { Component } from '@/data/mockData'
-import type { Workflow, ChoiceOption, EnvironmentVariableInfo } from '@/services/api/d365ApiTypes'
+import type { Workflow, ChoiceOption, EnvironmentVariableInfo, ConnectionReferenceBindingInfo } from '@/services/api/d365ApiTypes'
 
 interface OverviewTabContentProps {
   component: Component
@@ -13,11 +13,14 @@ interface OverviewTabContentProps {
   loadingChoiceOptions: boolean
   envVarInfo: EnvironmentVariableInfo | null
   loadingEnvVarInfo: boolean
+  connectionReferenceInfo: ConnectionReferenceBindingInfo | null
+  loadingConnectionReferenceInfo: boolean
   getStatusVariant: (status: string) => 'default' | 'secondary' | 'destructive' | 'outline'
   getFlowType: (workflow: Workflow) => string
   isFlow: (component: Component) => boolean
   isChoice: (component: Component) => boolean
   isEnvironmentVariable: (component: Component) => boolean
+  isConnectionReference: (component: Component) => boolean
 }
 
 // 容器动画 - 子元素交错入场
@@ -110,11 +113,14 @@ export const OverviewTabContent = ({
   loadingChoiceOptions,
   envVarInfo,
   loadingEnvVarInfo,
+  connectionReferenceInfo,
+  loadingConnectionReferenceInfo,
   getStatusVariant,
   getFlowType,
   isFlow,
   isChoice,
-  isEnvironmentVariable
+  isEnvironmentVariable,
+  isConnectionReference
 }: OverviewTabContentProps) => {
   return (
     <div className="space-y-4">
@@ -184,6 +190,44 @@ export const OverviewTabContent = ({
           )}
         </motion.div>
       </div>
+
+      {/* Connection Binding 区域 (仅 Connection Reference 类型显示) */}
+      {isConnectionReference(component) && (
+        <div>
+          <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Connection Binding
+          </h3>
+
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="show"
+            className="overflow-hidden rounded-lg border border-border/50 bg-card/40 backdrop-blur-md"
+          >
+            <InfoListItem
+              label="Connection"
+              loading={loadingConnectionReferenceInfo}
+              value={
+                connectionReferenceInfo?.connectionName && connectionReferenceInfo?.connectionId
+                  ? `${connectionReferenceInfo.connectionName} (${connectionReferenceInfo.connectionId})`
+                  : connectionReferenceInfo?.connectionName ||
+                    connectionReferenceInfo?.connectionId ||
+                    'Not bound'
+              }
+            />
+            <InfoListItem
+              label="Owner"
+              loading={loadingConnectionReferenceInfo}
+              value={connectionReferenceInfo?.ownerName || 'N/A'}
+            />
+            <InfoListItem
+              label="Owner Email"
+              loading={loadingConnectionReferenceInfo}
+              value={connectionReferenceInfo?.ownerEmail || 'N/A'}
+            />
+          </motion.div>
+        </div>
+      )}
 
       {/* Options 区域 (仅 Choice 类型显示) */}
       {isChoice(component) && (

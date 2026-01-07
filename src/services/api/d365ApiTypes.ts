@@ -345,6 +345,44 @@ export interface Organization {
   organizationversion?: string
 }
 
+// System User
+export interface SystemUser {
+  systemuserid: string
+  fullname?: string
+  internalemailaddress?: string
+}
+
+// Power Platform Connection (used by Connection References)
+export interface PowerPlatformConnection {
+  connectionid: string
+  name?: string
+  displayname?: string
+  connectionname?: string
+  _owninguser_value?: string
+  _createdby_value?: string
+  owninguser?: SystemUser
+  createdby?: SystemUser
+}
+
+// Connection Reference
+export interface ConnectionReference {
+  connectionreferenceid: string
+  connectionreferencedisplayname?: string
+  connectionreferencelogicalname?: string
+  connectionid?: string
+  connectorid?: string
+  _owninguser_value?: string
+  _ownerid_value?: string
+  _createdby_value?: string
+}
+
+export interface ConnectionReferenceBindingInfo {
+  connectionId?: string
+  connectionName?: string
+  ownerName?: string
+  ownerEmail?: string
+}
+
 // Custom Error Type
 export interface ApiError {
   type: 'network' | 'auth' | 'server' | 'validation' | 'notfound'

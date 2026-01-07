@@ -16,9 +16,10 @@ import { fetchComponentSolutions } from '@/services/dataServices/solutionService
 import { fetchFlowDetails } from '@/services/dataServices/flowService'
 import { fetchChoiceOptions } from '@/services/dataServices/choiceService'
 import { fetchEnvironmentVariableInfo } from '@/services/dataServices/environmentVariableService'
+import { fetchConnectionReferenceBindingInfo } from '@/services/dataServices/connectionReferenceService'
 import { getEnvironmentId } from '@/services/dataServices/environmentService'
 import { getFlowType } from '@/services/transformers/componentTransformer'
-import type { Workflow, ChoiceOption, EnvironmentVariableInfo } from '@/services/api/d365ApiTypes'
+import type { Workflow, ChoiceOption, EnvironmentVariableInfo, ConnectionReferenceBindingInfo } from '@/services/api/d365ApiTypes'
 import { toast } from 'sonner'
 import { PropertiesTabContent } from './PropertiesTabContent'
 import { OverviewTabContent } from './OverviewTabContent'
@@ -46,6 +47,8 @@ export const ComponentDetailDialog = ({
   const [loadingChoiceOptions, setLoadingChoiceOptions] = useState(false)
   const [envVarInfo, setEnvVarInfo] = useState<EnvironmentVariableInfo | null>(null)
   const [loadingEnvVarInfo, setLoadingEnvVarInfo] = useState(false)
+  const [connectionReferenceInfo, setConnectionReferenceInfo] = useState<ConnectionReferenceBindingInfo | null>(null)
+  const [loadingConnectionReferenceInfo, setLoadingConnectionReferenceInfo] = useState(false)
 
   const sortedComponentSolutions = useMemo(() => {
     const getInstalledTime = (installedOn?: string) => {
@@ -72,6 +75,10 @@ export const ComponentDetailDialog = ({
 
   const isEnvironmentVariable = (component: Component): boolean => {
     return component.category === 'environmentvariables' || component.type === 'Environment Variable Definition'
+  }
+
+  const isConnectionReference = (component: Component): boolean => {
+    return component.category === 'connectionreferences' || component.type === 'Connection Reference'
   }
 
   const openSolutionInPowerPlatform = async (solution: Solution) => {
@@ -202,6 +209,36 @@ export const ComponentDetailDialog = ({
       })
   }, [component])
 
+  // 获取 Connection Reference 当前绑定的 Connection 与 owner 信息
+  useEffect(() => {
+    if (!component || !isConnectionReference(component)) {
+      setConnectionReferenceInfo(null)
+      return
+    }
+
+    const referenceId = component.id
+    if (!referenceId) {
+      console.warn('Connection Reference component missing referenceId')
+      return
+    }
+
+    setLoadingConnectionReferenceInfo(true)
+    fetchConnectionReferenceBindingInfo(referenceId)
+      .then(info => {
+        setConnectionReferenceInfo(info)
+      })
+      .catch(error => {
+        console.error('Failed to fetch connection reference info:', error)
+        toast.error('Failed to load connection binding information', {
+          description: error instanceof Error ? error.message : 'Could not retrieve connection and owner details'
+        })
+        setConnectionReferenceInfo(null)
+      })
+      .finally(() => {
+        setLoadingConnectionReferenceInfo(false)
+      })
+  }, [component])
+
   useEffect(() => {
     if (component) {
       setComponentSolutions(component.solutions || [])
@@ -256,11 +293,14 @@ export const ComponentDetailDialog = ({
                   loadingChoiceOptions={loadingChoiceOptions}
                   envVarInfo={envVarInfo}
                   loadingEnvVarInfo={loadingEnvVarInfo}
+                  connectionReferenceInfo={connectionReferenceInfo}
+                  loadingConnectionReferenceInfo={loadingConnectionReferenceInfo}
                   getStatusVariant={getStatusVariant}
                   getFlowType={getFlowType}
                   isFlow={isFlow}
                   isChoice={isChoice}
                   isEnvironmentVariable={isEnvironmentVariable}
+                  isConnectionReference={isConnectionReference}
                 />
               </TabsContent>
 

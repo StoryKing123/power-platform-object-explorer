@@ -2,7 +2,14 @@
 
 import { d365ApiClient } from '../api/d365ApiClient'
 import { D365_API_CONFIG } from '../api/d365ApiConfig'
-import type { SolutionComponentSummary, ODataResponse, ODataParams } from '../api/d365ApiTypes'
+import type {
+  ConnectionReference,
+  ConnectionReferenceBindingInfo,
+  ODataParams,
+  ODataResponse,
+  SolutionComponentSummary,
+  SystemUser
+} from '../api/d365ApiTypes'
 import { buildSolutionComponentSummarySearchClause, getDefaultSolutionId, handleWorkflowIdUniqueUnsupported } from './searchService'
 import { getCategoryTypeFilter } from './componentCountService'
 
@@ -106,5 +113,65 @@ export async function getConnectionReferenceCount(): Promise<number> {
   } catch (error) {
     console.warn('Failed to get connection reference count:', error)
     return 0
+  }
+}
+
+function normalizeGuid(value: string): string {
+  return (value || '').replace(/[{}]/g, '')
+}
+
+async function fetchSystemUserById(systemUserId: string): Promise<SystemUser | null> {
+  const id = normalizeGuid(systemUserId)
+  if (!id) return null
+
+  try {
+    const user = await d365ApiClient.getById<SystemUser>(
+      D365_API_CONFIG.endpoints.systemUsers,
+      id,
+      { $select: 'systemuserid,fullname,internalemailaddress' }
+    )
+    return user || null
+  } catch (error) {
+    console.warn('Failed to fetch system user:', error)
+    return null
+  }
+}
+
+/**
+ * 获取 Connection Reference 当前绑定的 Connection，以及该 Connection 的 owner 信息
+ */
+export async function fetchConnectionReferenceBindingInfo(
+  connectionReferenceId: string
+): Promise<ConnectionReferenceBindingInfo | null> {
+  const id = normalizeGuid(connectionReferenceId)
+  if (!id) return null
+
+  const response = await d365ApiClient.getCollection<ConnectionReference>(
+    D365_API_CONFIG.endpoints.connectionReferences,
+    {
+      $filter: `connectionreferenceid eq ${id}`,
+      $select: 'connectionreferenceid,connectionreferencedisplayname,connectionid,connectorid,connectionreferencelogicalname,_owninguser_value,_ownerid_value,_createdby_value',
+      $top: 1,
+    },
+    'v9.2'
+  )
+
+  const connectionReference = response.value?.[0]
+  if (!connectionReference) return null
+
+  const connectionId = connectionReference.connectionid
+  const connectionName = connectionReference.connectionreferencedisplayname
+
+  const ownerUserId =
+    connectionReference._owninguser_value ||
+    connectionReference._ownerid_value ||
+    connectionReference._createdby_value
+  const ownerUser = ownerUserId ? await fetchSystemUserById(ownerUserId) : null
+
+  return {
+    connectionId,
+    connectionName,
+    ownerName: ownerUser?.fullname,
+    ownerEmail: ownerUser?.internalemailaddress,
   }
 }

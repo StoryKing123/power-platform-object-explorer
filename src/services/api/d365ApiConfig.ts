@@ -51,6 +51,8 @@ export const D365_API_CONFIG = {
     connectors: 'connectors',
     environmentVariables: 'environmentvariabledefinitions',
     environmentVariableValues: 'environmentvariablevalues',
+    connections: 'connections',
+    systemUsers: 'systemusers',
   },
 
   // Default OData query parameters for each entity type
