@@ -50,7 +50,7 @@ export const AppSidebar = ({
             <Sparkles className="h-5 w-5" />
           </motion.div>
           <div className="min-w-0">
-            <div className="truncate text-sm font-semibold tracking-tight">Power Platform Explorer</div>
+            <div className="truncate text-sm font-semibold tracking-tight">Component Detective</div>
             <div className="truncate text-xs text-muted-foreground">Component browser</div>
           </div>
         </div>

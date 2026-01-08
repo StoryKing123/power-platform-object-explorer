@@ -21,6 +21,6 @@ export const config: AppConfig = {
   webResource: {
     // currentName: '',
 
-    entityMetadataPage: 'xxx_Entity_Metadata'
+    entityMetadataPage: 'util_/dataverse_detective/index.html'
   }
 }

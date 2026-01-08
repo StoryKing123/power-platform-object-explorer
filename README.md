@@ -1,4 +1,4 @@
-# Power Platform Object Explorer
+# Component Detective
 
 A web application for browsing Power Platform components.
 
