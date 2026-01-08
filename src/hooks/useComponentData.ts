@@ -13,6 +13,7 @@ import { fetchEntities, searchEntities, getEntityCount } from '@/services/dataSe
 import { fetchApps, searchApps, getAppCount } from '@/services/dataServices/appService'
 import { fetchFlows, searchFlows, getFlowCount } from '@/services/dataServices/flowService'
 import { fetchSecurityRoles, searchSecurityRoles, getSecurityRoleCount } from '@/services/dataServices/securityRoleService'
+import { fetchWebResources, searchWebResources, getWebResourceCount } from '@/services/dataServices/webResourceService'
 import { fetchChoices, searchChoices, getChoiceCount } from '@/services/dataServices/choiceService'
 import { fetchConnectionReferences, searchConnectionReferences, getConnectionReferenceCount } from '@/services/dataServices/connectionReferenceService'
 import { fetchConnectors, searchConnectors, getConnectorCount } from '@/services/dataServices/connectorService'
@@ -61,7 +62,7 @@ export function useComponentData(
 
         // NEW: If search query exists and is >= 2 chars, use server-side search
         // EXCEPTION: Some categories (flows, workflows) need specialized search to filter correctly
-        const useGeneralSearch = searchQuery && searchQuery.trim().length >= 2 && !['flows', 'workflows', 'choices'].includes(category)
+        const useGeneralSearch = searchQuery && searchQuery.trim().length >= 2 && !['flows', 'workflows', 'choices', 'webresources'].includes(category)
         if (useGeneralSearch) {
           console.log('[useComponentData] Using server-side search:', { searchQuery, category, pageSize, skip })
           const response = await searchComponents(searchQuery, category, pageSize, skip)
@@ -155,6 +156,19 @@ export function useComponentData(
             break
           }
 
+          case 'webresources': {
+            if (searchQuery) {
+              const response = await searchWebResources(searchQuery, pageSize, skip)
+              components = response.value.map(transformSearchResult)
+              hasMore = !!response['@odata.nextLink']
+            } else {
+              const response = await fetchWebResources(pageSize, skip)
+              components = response.value.map(transformSearchResult)
+              hasMore = !!response['@odata.nextLink']
+            }
+            break
+          }
+
           case 'choices': {
             if (searchQuery) {
               const response = await searchChoices(searchQuery, pageSize, skip)
@@ -236,6 +250,7 @@ export function useComponentData(
         'apps',
         'flows',
         'securityroles',
+        'webresources',
         'choices',
         'connectionreferences',
         'connectors',
@@ -272,6 +287,9 @@ export function useComponentData(
         case 'securityroles':
           count = await getSecurityRoleCount()
           break
+        case 'webresources':
+          count = await getWebResourceCount()
+          break
         case 'choices':
           count = await getChoiceCount()
           break
@@ -286,17 +304,18 @@ export function useComponentData(
           break
         case 'all': {
           // Sum all counts
-          const [entities, apps, flows, securityRoles, choices, connectionReferences, connectors, environmentVariables] = await Promise.all([
+          const [entities, apps, flows, securityRoles, webResources, choices, connectionReferences, connectors, environmentVariables] = await Promise.all([
             getEntityCount(),
             getAppCount(),
             getFlowCount(),
             getSecurityRoleCount(),
+            getWebResourceCount(),
             getChoiceCount(),
             getConnectionReferenceCount(),
             getConnectorCount(),
             getEnvironmentVariableCount(),
           ])
-          count = entities + apps + flows + securityRoles + choices + connectionReferences + connectors + environmentVariables
+          count = entities + apps + flows + securityRoles + webResources + choices + connectionReferences + connectors + environmentVariables
           break
         }
         default:

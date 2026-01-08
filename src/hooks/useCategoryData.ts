@@ -91,6 +91,7 @@ function getDefaultCategories(): Category[] {
     { id: 'apps', name: 'Apps', icon: 'Package', count: 0 },
     { id: 'flows', name: 'Flows', icon: 'Zap', count: 0 },
     { id: 'securityroles', name: 'Security Roles', icon: 'Shield', count: 0 },
+    { id: 'webresources', name: 'Web Resources', icon: 'Globe', count: 0 },
     { id: 'choices', name: 'Choices', icon: 'List', count: 0 },
     { id: 'connectionreferences', name: 'Connection References', icon: 'Link', count: 0 },
     { id: 'connectors', name: 'Custom Connectors', icon: 'Plug', count: 0 },

@@ -15,6 +15,7 @@ function getComponentTypeCode(category: string): number | null {
     flows: COMPONENT_TYPE_CODES.workflow,
     apps: COMPONENT_TYPE_CODES.canvasApp, // Both model-driven and canvas apps
     securityroles: COMPONENT_TYPE_CODES.securityRole,
+    webresources: COMPONENT_TYPE_CODES.webResource,
     choices: 9, // OptionSet
     connectionreferences: 10150, // Connection Reference
     connectors: 372, // Custom Connector

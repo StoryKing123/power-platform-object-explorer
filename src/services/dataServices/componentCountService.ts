@@ -12,6 +12,7 @@ export type CategoryCountId =
   | 'apps'
   | 'flows'
   | 'securityroles'
+  | 'webresources'
   | 'choices'
   | 'connectionreferences'
   | 'connectors'
@@ -41,6 +42,7 @@ function computeCategoryCounts(rows: SolutionComponentCountSummary[]): { counts:
     apps: new Set<number>(),
     flows: new Set<number>(),
     securityroles: new Set<number>(),
+    webresources: new Set<number>(),
     choices: new Set<number>(),
     connectionreferences: new Set<number>(),
     connectors: new Set<number>(),
@@ -53,6 +55,7 @@ function computeCategoryCounts(rows: SolutionComponentCountSummary[]): { counts:
     apps: 0,
     flows: 0,
     securityroles: 0,
+    webresources: 0,
     choices: 0,
     connectionreferences: 0,
     connectors: 0,
@@ -78,6 +81,11 @@ function computeCategoryCounts(rows: SolutionComponentCountSummary[]): { counts:
     if (type === 20 || name === 'role') {
       counts.securityroles += total
       categories.push('securityroles')
+    }
+
+    if (type === 61 || name === 'webresource') {
+      counts.webresources += total
+      categories.push('webresources')
     }
 
     if (type === 9 || name === 'optionset') {
@@ -129,6 +137,7 @@ function computeCategoryCounts(rows: SolutionComponentCountSummary[]): { counts:
     counts.apps +
     counts.flows +
     counts.securityroles +
+    counts.webresources +
     counts.choices +
     counts.connectionreferences +
     counts.connectors +

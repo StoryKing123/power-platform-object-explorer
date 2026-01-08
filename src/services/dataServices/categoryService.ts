@@ -4,6 +4,7 @@ import { d365ApiClient } from '../api/d365ApiClient'
 import { D365_API_CONFIG } from '../api/d365ApiConfig'
 import type { Category } from '@/data/mockData'
 import { fetchCategoryCounts } from './componentCountService'
+import { getDefaultSolutionId } from './searchService'
 
 /**
  * Fetch all categories with their counts
@@ -17,6 +18,7 @@ export async function fetchCategories(): Promise<Category[]> {
           apps: number
           flows: number
           securityroles: number
+          webresources: number
           choices: number
           connectionreferences: number
           connectors: number
@@ -37,6 +39,7 @@ export async function fetchCategories(): Promise<Category[]> {
         appCount,
         flowCount,
         securityRoleCount,
+        webResourceCount,
         choiceCount,
         connectionReferenceCount,
         connectorCount,
@@ -46,6 +49,7 @@ export async function fetchCategories(): Promise<Category[]> {
         getAppCount(),
         getFlowCount(),
         getSecurityRoleCount(),
+        getWebResourceCount(),
         getChoiceCount(),
         getConnectionReferenceCount(),
         getConnectorCount(),
@@ -57,6 +61,7 @@ export async function fetchCategories(): Promise<Category[]> {
         appCount +
         flowCount +
         securityRoleCount +
+        webResourceCount +
         choiceCount +
         connectionReferenceCount +
         connectorCount +
@@ -68,6 +73,7 @@ export async function fetchCategories(): Promise<Category[]> {
         apps: appCount,
         flows: flowCount,
         securityroles: securityRoleCount,
+        webresources: webResourceCount,
         choices: choiceCount,
         connectionreferences: connectionReferenceCount,
         connectors: connectorCount,
@@ -82,6 +88,7 @@ export async function fetchCategories(): Promise<Category[]> {
       { id: 'apps', name: 'Apps', icon: 'Package', count: counts.apps },
       { id: 'flows', name: 'Flows', icon: 'Zap', count: counts.flows },
       { id: 'securityroles', name: 'Security Roles', icon: 'Shield', count: counts.securityroles },
+      { id: 'webresources', name: 'Web Resources', icon: 'Globe', count: counts.webresources },
       { id: 'choices', name: 'Choices', icon: 'List', count: counts.choices },
       { id: 'connectionreferences', name: 'Connection References', icon: 'Link', count: counts.connectionreferences },
       { id: 'connectors', name: 'Custom Connectors', icon: 'Plug', count: counts.connectors },
@@ -220,14 +227,16 @@ async function getPluginCount(): Promise<number> {
  */
 async function getWebResourceCount(): Promise<number> {
   try {
+    const solutionId = await getDefaultSolutionId()
     const response = await d365ApiClient.getCollection<any>(
-      D365_API_CONFIG.endpoints.webResources,
+      D365_API_CONFIG.endpoints.solutionComponentCountSummaries,
       {
-        $count: true,
-        $top: 1,
+        $select: 'msdyn_componenttype,msdyn_total',
+        $filter: `msdyn_solutionid eq ${solutionId} and msdyn_componenttype eq 61`,
       }
     )
-    return response['@odata.count'] || 0
+    const row = response.value?.find((r: any) => r.msdyn_componenttype === 61)
+    return row?.msdyn_total || 0
   } catch (error) {
     console.warn('Failed to get web resource count:', error)
     return 0

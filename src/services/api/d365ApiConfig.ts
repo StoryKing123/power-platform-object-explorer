@@ -138,6 +138,7 @@ export const CATEGORY_COMPONENT_TYPES: Record<string, number[]> = {
   apps: [80, 300],  // 80: Model-driven App (appmodule), 300: Canvas App
   flows: [29],  // Modern flows (workflows with category 5)
   securityroles: [20],
+  webresources: [61],
   choices: [9],  // OptionSet (Choice)
   connectionreferences: [10150],  // Connection Reference
   connectors: [372],  // Custom Connector

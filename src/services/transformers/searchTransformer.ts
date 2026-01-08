@@ -12,7 +12,8 @@ function getCategoryFromComponentType(result: SolutionComponentSummary): string 
     80: 'apps',    // Model-driven App
     300: 'apps',   // Canvas App
     29: 'workflows',  // Will be filtered by category in flowService
-    20: 'securityRoles',
+    20: 'securityroles',
+    61: 'webresources',
     9: 'choices',  // OptionSet (Choice)
     10150: 'connectionreferences',  // Connection Reference
     372: 'connectors',  // Custom Connector
@@ -26,6 +27,7 @@ function getCategoryFromComponentType(result: SolutionComponentSummary): string 
   if (logicalName === 'entity') return 'entities'
   if (logicalName === 'appmodule' || logicalName === 'canvasapp') return 'apps'
   if (logicalName === 'role') return 'securityroles'
+  if (logicalName === 'webresource') return 'webresources'
   if (logicalName === 'optionset') return 'choices'
   if (logicalName === 'connectionreference') return 'connectionreferences'
   if (logicalName === 'connector') return 'connectors'
@@ -58,6 +60,7 @@ function getComponentTypeLabel(componentType: number, subtype?: number | string 
     300: 'Canvas App',
     29: 'Workflow',
     20: 'Security Role',
+    61: 'Web Resource',
     9: 'Choice',
     10150: 'Connection Reference',
     372: 'Custom Connector',
