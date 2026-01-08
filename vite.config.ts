@@ -3,15 +3,16 @@ import react from '@vitejs/plugin-react'
 import path from 'path'
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   plugins: [react()],
+  base: command === 'build' ? './' : '/',
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
     },
   },
-  server:{
-    cors:true
+  server: {
+    cors: true,
   },
   build: {
     // 确保CSS不被代码分割，输出为单个文件
@@ -23,8 +24,8 @@ export default defineConfig({
         // 不使用hash，使用固定的文件名
         entryFileNames: 'objectexplorer.js',
         chunkFileNames: 'objectexplorer.js',
-        assetFileNames: 'objectexplorer.[ext]'
-      }
-    }
-  }
-})
+        assetFileNames: 'objectexplorer.[ext]',
+      },
+    },
+  },
+}))

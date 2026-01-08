@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ImportExportXml xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <Entities />
+  <Roles />
+  <Workflows />
+  <FieldSecurityProfiles />
+  <Templates />
+  <WebResources>
+    <WebResource>
+      <WebResourceId>{a9d30dee-3fff-49d3-b922-c830d2ccba3b}</WebResourceId>
+      <Name>util_/component_detective/index.html</Name>
+      <DisplayName>Component_Detective_index.html</DisplayName>
+      <WebResourceType>1</WebResourceType>
+      <IntroducedVersion>1.0</IntroducedVersion>
+      <IsEnabledForMobileClient>0</IsEnabledForMobileClient>
+      <IsAvailableForMobileOffline>0</IsAvailableForMobileOffline>
+      <IsCustomizable>
+        <CanBeChanged>1</CanBeChanged>
+        <ManagedPropertyLogicalName>iscustomizable</ManagedPropertyLogicalName>
+      </IsCustomizable>
+      <IsHidden>0</IsHidden>
+      <CanBeDeleted>
+        <CanBeChanged>1</CanBeChanged>
+        <ManagedPropertyLogicalName>canbedeleted</ManagedPropertyLogicalName>
+      </CanBeDeleted>
+      <FileName>/WebResources/util_/component_detective/Component_Detective_index.html</FileName>
+    </WebResource>
+    <WebResource>
+      <WebResourceId>{58b69b78-a1c4-4a7c-8396-c2f50c90f944}</WebResourceId>
+      <Name>util_/component_detective/index.js</Name>
+      <DisplayName>Component_Detective_index.js</DisplayName>
+      <WebResourceType>3</WebResourceType>
+      <IntroducedVersion>1.0</IntroducedVersion>
+      <IsEnabledForMobileClient>0</IsEnabledForMobileClient>
+      <IsAvailableForMobileOffline>0</IsAvailableForMobileOffline>
+      <IsCustomizable>
+        <CanBeChanged>1</CanBeChanged>
+        <ManagedPropertyLogicalName>iscustomizable</ManagedPropertyLogicalName>
+      </IsCustomizable>
+      <IsHidden>0</IsHidden>
+      <CanBeDeleted>
+        <CanBeChanged>1</CanBeChanged>
+        <ManagedPropertyLogicalName>canbedeleted</ManagedPropertyLogicalName>
+      </CanBeDeleted>
+      <FileName>/WebResources/util_/component_detective/Component_Detective_index.js</FileName>
+    </WebResource>
+    <WebResource>
+      <WebResourceId>{2aa0d6f1-7edc-45a8-96b9-e9bd477cc3cb}</WebResourceId>
+      <Name>util_/component_detective/index.css</Name>
+      <DisplayName>Component_Detective_index.css</DisplayName>
+      <WebResourceType>2</WebResourceType>
+      <IntroducedVersion>1.0</IntroducedVersion>
+      <IsEnabledForMobileClient>0</IsEnabledForMobileClient>
+      <IsAvailableForMobileOffline>0</IsAvailableForMobileOffline>
+      <IsCustomizable>
+        <CanBeChanged>1</CanBeChanged>
+        <ManagedPropertyLogicalName>iscustomizable</ManagedPropertyLogicalName>
+      </IsCustomizable>
+      <IsHidden>0</IsHidden>
+      <CanBeDeleted>
+        <CanBeChanged>1</CanBeChanged>
+        <ManagedPropertyLogicalName>canbedeleted</ManagedPropertyLogicalName>
+      </CanBeDeleted>
+      <FileName>/WebResources/util_/component_detective/Component_Detective_index.css</FileName>
+    </WebResource>
+  </WebResources>
+  <EntityMaps />
+  <EntityRelationships />
+  <OrganizationSettings />
+  <optionsets />
+  <CustomControls />
+  <SolutionPluginAssemblies />
+  <EntityDataProviders />
+  <Languages>
+    <Language>1033</Language>
+  </Languages>
+</ImportExportXml>
+

@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "pack:solution": "node scripts/pack-webresource-solution.mjs",
+    "build:solution": "pnpm build && pnpm pack:solution",
     "preview": "vite preview"
   },
   "dependencies": {
