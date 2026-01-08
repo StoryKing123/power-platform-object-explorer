@@ -17,9 +17,10 @@ import { fetchFlowDetails } from '@/services/dataServices/flowService'
 import { fetchChoiceOptions } from '@/services/dataServices/choiceService'
 import { fetchEnvironmentVariableInfo } from '@/services/dataServices/environmentVariableService'
 import { fetchConnectionReferenceBindingInfo } from '@/services/dataServices/connectionReferenceService'
+import { fetchWebResourceDetails } from '@/services/dataServices/webResourceService'
 import { getEnvironmentId } from '@/services/dataServices/environmentService'
 import { getFlowType } from '@/services/transformers/componentTransformer'
-import type { Workflow, ChoiceOption, EnvironmentVariableInfo, ConnectionReferenceBindingInfo } from '@/services/api/d365ApiTypes'
+import type { Workflow, ChoiceOption, EnvironmentVariableInfo, ConnectionReferenceBindingInfo, WebResource } from '@/services/api/d365ApiTypes'
 import { toast } from 'sonner'
 import { PropertiesTabContent } from './PropertiesTabContent'
 import { OverviewTabContent } from './OverviewTabContent'
@@ -49,6 +50,8 @@ export const ComponentDetailDialog = ({
   const [loadingEnvVarInfo, setLoadingEnvVarInfo] = useState(false)
   const [connectionReferenceInfo, setConnectionReferenceInfo] = useState<ConnectionReferenceBindingInfo | null>(null)
   const [loadingConnectionReferenceInfo, setLoadingConnectionReferenceInfo] = useState(false)
+  const [webResourceDetails, setWebResourceDetails] = useState<WebResource | null>(null)
+  const [loadingWebResourceDetails, setLoadingWebResourceDetails] = useState(false)
 
   const sortedComponentSolutions = useMemo(() => {
     const getInstalledTime = (installedOn?: string) => {
@@ -79,6 +82,10 @@ export const ComponentDetailDialog = ({
 
   const isConnectionReference = (component: Component): boolean => {
     return component.category === 'connectionreferences' || component.type === 'Connection Reference'
+  }
+
+  const isWebResource = (component: Component): boolean => {
+    return component.category === 'webresources' || component.type === 'Web Resource'
   }
 
   const openSolutionInPowerPlatform = async (solution: Solution) => {
@@ -239,6 +246,35 @@ export const ComponentDetailDialog = ({
       })
   }, [component])
 
+  // 获取 Web Resource 详细信息
+  useEffect(() => {
+    if (!component || !isWebResource(component)) {
+      setWebResourceDetails(null)
+      return
+    }
+
+    const webresourceid = component.id
+    if (!webresourceid) {
+      console.warn('Web Resource component missing webresourceid')
+      return
+    }
+
+    setLoadingWebResourceDetails(true)
+    fetchWebResourceDetails(webresourceid)
+      .then(details => {
+        setWebResourceDetails(details)
+      })
+      .catch(error => {
+        console.error('Failed to fetch web resource details:', error)
+        toast.error('Failed to load web resource details', {
+          description: error instanceof Error ? error.message : 'Could not retrieve web resource information'
+        })
+      })
+      .finally(() => {
+        setLoadingWebResourceDetails(false)
+      })
+  }, [component])
+
   useEffect(() => {
     if (component) {
       setComponentSolutions(component.solutions || [])
@@ -295,12 +331,15 @@ export const ComponentDetailDialog = ({
                   loadingEnvVarInfo={loadingEnvVarInfo}
                   connectionReferenceInfo={connectionReferenceInfo}
                   loadingConnectionReferenceInfo={loadingConnectionReferenceInfo}
+                  webResourceDetails={webResourceDetails}
+                  loadingWebResourceDetails={loadingWebResourceDetails}
                   getStatusVariant={getStatusVariant}
                   getFlowType={getFlowType}
                   isFlow={isFlow}
                   isChoice={isChoice}
                   isEnvironmentVariable={isEnvironmentVariable}
                   isConnectionReference={isConnectionReference}
+                  isWebResource={isWebResource}
                 />
               </TabsContent>
 

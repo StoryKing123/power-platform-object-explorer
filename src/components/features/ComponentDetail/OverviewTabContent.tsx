@@ -1,9 +1,10 @@
 import { motion } from 'framer-motion'
-import { Loader2 } from 'lucide-react'
+import { Loader2, ExternalLink } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import type { Component } from '@/data/mockData'
-import type { Workflow, ChoiceOption, EnvironmentVariableInfo, ConnectionReferenceBindingInfo } from '@/services/api/d365ApiTypes'
+import type { Workflow, ChoiceOption, EnvironmentVariableInfo, ConnectionReferenceBindingInfo, WebResource } from '@/services/api/d365ApiTypes'
+import { buildWebResourceAbsoluteUrl } from '@/utils/webResourceHelpers'
 
 interface OverviewTabContentProps {
   component: Component
@@ -15,12 +16,15 @@ interface OverviewTabContentProps {
   loadingEnvVarInfo: boolean
   connectionReferenceInfo: ConnectionReferenceBindingInfo | null
   loadingConnectionReferenceInfo: boolean
+  webResourceDetails: WebResource | null
+  loadingWebResourceDetails: boolean
   getStatusVariant: (status: string) => 'default' | 'secondary' | 'destructive' | 'outline'
   getFlowType: (workflow: Workflow) => string
   isFlow: (component: Component) => boolean
   isChoice: (component: Component) => boolean
   isEnvironmentVariable: (component: Component) => boolean
   isConnectionReference: (component: Component) => boolean
+  isWebResource: (component: Component) => boolean
 }
 
 // 容器动画 - 子元素交错入场
@@ -115,12 +119,15 @@ export const OverviewTabContent = ({
   loadingEnvVarInfo,
   connectionReferenceInfo,
   loadingConnectionReferenceInfo,
+  webResourceDetails,
+  loadingWebResourceDetails,
   getStatusVariant,
   getFlowType,
   isFlow,
   isChoice,
   isEnvironmentVariable,
-  isConnectionReference
+  isConnectionReference,
+  isWebResource
 }: OverviewTabContentProps) => {
   return (
     <div className="space-y-4">
@@ -386,6 +393,79 @@ export const OverviewTabContent = ({
               <div className="flex flex-col items-center justify-center py-12 text-center">
                 <p className="text-sm text-muted-foreground">
                   No values available for this environment variable
+                </p>
+              </div>
+            )}
+          </motion.div>
+        </div>
+      )}
+
+      {/* Web Resource URL 区域 (仅 Web Resource 类型显示) */}
+      {isWebResource(component) && (
+        <div>
+          <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Resource URL
+          </h3>
+
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="show"
+            className="overflow-hidden rounded-lg border border-border/50 bg-card/40 backdrop-blur-md"
+          >
+            {loadingWebResourceDetails ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground/50" />
+                <span className="mt-3 text-sm text-muted-foreground">Loading URL...</span>
+              </div>
+            ) : webResourceDetails?.name ? (
+              <motion.div
+                variants={listItemVariants}
+                className="group relative p-4"
+              >
+                <a
+                  href={buildWebResourceAbsoluteUrl(webResourceDetails.name)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block"
+                >
+                  <div className="flex items-start gap-4 p-4 rounded-lg border border-primary/20 bg-gradient-to-br from-primary/5 to-transparent transition-all duration-200 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/10 hover:scale-[1.01]">
+                    {/* URL Icon */}
+                    <div className="flex-shrink-0 mt-1">
+                      <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/20 group-hover:bg-primary/20 transition-colors">
+                        <ExternalLink className="h-5 w-5 text-primary" />
+                      </div>
+                    </div>
+
+                    {/* URL Content */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                          Click to open
+                        </span>
+                        <Badge
+                          variant="secondary"
+                          className="text-[10px] px-1.5 py-0 h-4 shrink-0"
+                        >
+                          New Tab
+                        </Badge>
+                      </div>
+                      <p className="text-sm font-mono text-foreground/90 break-all leading-relaxed group-hover:text-primary transition-colors">
+                        {buildWebResourceAbsoluteUrl(webResourceDetails.name)}
+                      </p>
+                    </div>
+
+                    {/* Hover Indicator */}
+                    <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <ExternalLink className="h-4 w-4 text-primary" />
+                    </div>
+                  </div>
+                </a>
+              </motion.div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <p className="text-sm text-muted-foreground">
+                  No URL available for this web resource
                 </p>
               </div>
             )}

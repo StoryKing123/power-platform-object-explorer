@@ -2,7 +2,7 @@
 
 import { d365ApiClient } from '../api/d365ApiClient'
 import { D365_API_CONFIG } from '../api/d365ApiConfig'
-import type { SolutionComponentSummary, ODataResponse, ODataParams } from '../api/d365ApiTypes'
+import type { SolutionComponentSummary, ODataResponse, ODataParams, WebResource } from '../api/d365ApiTypes'
 import { getDefaultSolutionId } from './searchService'
 
 /**
@@ -96,4 +96,19 @@ export async function getWebResourceCount(): Promise<number> {
     console.warn('Failed to get web resource count:', error)
     return 0
   }
+}
+
+/**
+ * 通过 webresourceid 获取单个 Web Resource 的详细信息
+ */
+export async function fetchWebResourceDetails(webresourceid: string): Promise<WebResource> {
+  const params: ODataParams = {
+    $select: D365_API_CONFIG.queries.webResources.$select,
+  }
+
+  return await d365ApiClient.get<WebResource>(
+    `${D365_API_CONFIG.endpoints.webResources}(${webresourceid})`,
+    params,
+    'v9.2'
+  )
 }
