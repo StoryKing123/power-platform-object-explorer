@@ -6,7 +6,7 @@
       <LocalizedName description="Component Detective" languagecode="1033" />
     </LocalizedNames>
     <Descriptions />
-    <Version>1.0</Version>
+    <Version>1.2</Version>
     <Managed>0</Managed>
     <Publisher>
       <UniqueName>util</UniqueName>

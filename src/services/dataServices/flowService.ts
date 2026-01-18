@@ -136,3 +136,34 @@ export async function fetchFlowDetails(workflowidunique: string): Promise<Workfl
     throw error
   }
 }
+
+/**
+ * Fetch flow editor identifiers (workflowidunique + solutionid) by workflowid.
+ * Used as a fallback when search results don't include required fields.
+ */
+export async function fetchFlowEditorInfoByWorkflowId(
+  workflowid: string
+): Promise<{ workflowidunique: string; solutionid: string } | null> {
+  const params: ODataParams = {
+    $select: 'workflowidunique,solutionid,category',
+    $filter: `workflowid eq ${workflowid}`,
+  }
+
+  const response = await d365ApiClient.getCollection<Workflow>(
+    D365_API_CONFIG.endpoints.workflows,
+    params,
+    'v9.2'
+  )
+
+  const workflow = response.value?.[0]
+  if (!workflow) return null
+
+  // Only cloud flows (modern flows) are supported by the Flow Editor URL.
+  if (workflow.category !== 5) return null
+
+  const workflowidunique = workflow.workflowidunique
+  const solutionid = workflow.solutionid
+  if (!workflowidunique || !solutionid) return null
+
+  return { workflowidunique, solutionid }
+}

@@ -13,6 +13,7 @@ import { type Component } from '@/data/mockData'
 import { getStatusVariant, normalizeGuid, isCanvasApp, isModelDrivenApp, isEntity, isSecurityRole, getEntityMetadataWebResourceName } from '@/utils/componentHelpers'
 import { getEnvironmentId } from '@/services/dataServices/environmentService'
 import { getDefaultSolutionId } from '@/services/dataServices/searchService'
+import { fetchFlowEditorInfoByWorkflowId } from '@/services/dataServices/flowService'
 import { toast } from 'sonner'
 
 interface ComponentTableRowProps {
@@ -113,17 +114,36 @@ export const ComponentTableRow = ({ component, index, onViewDetails }: Component
     e.preventDefault()
     e.stopPropagation()
 
-    const workflowidunique = component.metadata?.workflowidunique
-    const solutionid = component.metadata?.solutionid
+    let workflowidunique = component.metadata?.workflowidunique
+    let solutionid = component.metadata?.solutionid
 
-    if (!workflowidunique) {
-      toast.error('Unable to open flow: workflowidunique not found')
-      return
-    }
+    // Fallback: search results may omit fields required to construct the Flow Editor URL.
+    if (!workflowidunique || !solutionid) {
+      const workflowid = normalizeGuid(component.metadata?.objectId ?? component.id)
+      if (!workflowid) {
+        toast.error('Unable to open flow: workflow ID not found')
+        return
+      }
 
-    if (!solutionid) {
-      toast.error('Unable to open flow: solutionid not found')
-      return
+      try {
+        toast.loading('Retrieving flow details...')
+        const info = await fetchFlowEditorInfoByWorkflowId(workflowid)
+        toast.dismiss()
+
+        if (!info) {
+          toast.error('Unable to open flow: flow details not found (or not a cloud flow)')
+          return
+        }
+
+        workflowidunique = info.workflowidunique
+        solutionid = info.solutionid
+      } catch (error) {
+        toast.dismiss()
+        toast.error('Failed to retrieve flow details', {
+          description: error instanceof Error ? error.message : 'Unable to get flow details from Dynamics 365 API'
+        })
+        return
+      }
     }
 
     let environmentId: string
@@ -140,7 +160,7 @@ export const ComponentTableRow = ({ component, index, onViewDetails }: Component
     }
 
     const flowEditorUrl = `https://make.powerautomate.com/environments/${environmentId}/solutions/${solutionid}/flows/${workflowidunique}`
-    window.open(flowEditorUrl, '_blank')
+    window.open(flowEditorUrl, '_blank', 'noopener,noreferrer')
   }
 
   const handleEditSecurityRole = async (e: React.MouseEvent) => {
