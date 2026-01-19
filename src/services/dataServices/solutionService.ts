@@ -13,6 +13,7 @@ function getComponentTypeCode(category: string): number | null {
     entities: COMPONENT_TYPE_CODES.entity,
     // Cloud flows are stored as workflows (category = 5)
     flows: COMPONENT_TYPE_CODES.workflow,
+    workflows: COMPONENT_TYPE_CODES.workflow,
     apps: COMPONENT_TYPE_CODES.canvasApp, // Both model-driven and canvas apps
     securityroles: COMPONENT_TYPE_CODES.securityRole,
     webresources: COMPONENT_TYPE_CODES.webResource,
@@ -46,10 +47,11 @@ function transformSolution(d365Solution: D365Solution): Solution {
  */
 export async function fetchComponentSolutions(
   componentId: string,
-  category: string
+  category: string,
+  componentTypeOverride?: number | null
 ): Promise<Solution[]> {
   try {
-    const componentType = getComponentTypeCode(category)
+    const componentType = componentTypeOverride ?? getComponentTypeCode(category)
 
     if (!componentType) {
       console.warn(`Unknown component category: ${category}`)
@@ -64,6 +66,9 @@ export async function fetchComponentSolutions(
     } else if (category === 'apps') {
       // For apps, check both model-driven (80) and canvas (300)
       filter = `(objectid eq ${componentId} and (componenttype eq ${COMPONENT_TYPE_CODES.app} or componenttype eq ${COMPONENT_TYPE_CODES.canvasApp}))`
+    } else if (category === 'environmentvariables') {
+      // Environment variables can be both definition (380) and value (381)
+      filter = `(objectid eq ${componentId} and (componenttype eq 380 or componenttype eq 381))`
     } else {
       filter = `objectid eq ${componentId} and componenttype eq ${componentType}`
     }

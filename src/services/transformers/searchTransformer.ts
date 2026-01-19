@@ -11,7 +11,6 @@ function getCategoryFromComponentType(result: SolutionComponentSummary): string 
     1: 'entities',
     80: 'apps',    // Model-driven App
     300: 'apps',   // Canvas App
-    29: 'workflows',  // Will be filtered by category in flowService
     20: 'securityroles',
     61: 'webresources',
     9: 'choices',  // OptionSet (Choice)
@@ -20,6 +19,14 @@ function getCategoryFromComponentType(result: SolutionComponentSummary): string 
     380: 'environmentvariables',  // Environment Variable Definition
     381: 'environmentvariables',  // Environment Variable Value
   }
+
+  if (result.msdyn_componenttype === 29) {
+    if (result.msdyn_workflowcategory === 5 || result.msdyn_workflowcategory === '5') {
+      return 'flows'
+    }
+    return 'workflows'
+  }
+
   const fromType = categoryMap[result.msdyn_componenttype]
   if (fromType) return fromType
 

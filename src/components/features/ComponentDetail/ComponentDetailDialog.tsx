@@ -114,7 +114,11 @@ export const ComponentDetailDialog = ({
   useEffect(() => {
     if (currentTab === 'solutions' && component) {
       setLoadingSolutions(true)
-      fetchComponentSolutions(component.id, component.category)
+      fetchComponentSolutions(
+        component.id,
+        component.category,
+        typeof component.metadata?.componentType === 'number' ? component.metadata.componentType : null
+      )
         .then(solutions => {
           setComponentSolutions(solutions)
         })
