@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { Package, Loader2, ExternalLink, Clock3 } from 'lucide-react'
 import {
   Dialog,
@@ -18,12 +18,14 @@ import { fetchChoiceOptions } from '@/services/dataServices/choiceService'
 import { fetchEnvironmentVariableInfo } from '@/services/dataServices/environmentVariableService'
 import { fetchConnectionReferenceBindingInfo } from '@/services/dataServices/connectionReferenceService'
 import { fetchWebResourceDetails } from '@/services/dataServices/webResourceService'
+import { fetchComponentDependencies, type ComponentDependency, type DependencyData } from '@/services/dataServices/dependencyService'
 import { getEnvironmentId } from '@/services/dataServices/environmentService'
 import { getFlowType } from '@/services/transformers/componentTransformer'
 import type { Workflow, ChoiceOption, EnvironmentVariableInfo, ConnectionReferenceBindingInfo, WebResource } from '@/services/api/d365ApiTypes'
 import { toast } from 'sonner'
 import { PropertiesTabContent } from './PropertiesTabContent'
 import { OverviewTabContent } from './OverviewTabContent'
+import DependenciesTabContent from './DependenciesTabContent'
 
 interface ComponentDetailDialogProps {
   component: Component | null
@@ -52,6 +54,8 @@ export const ComponentDetailDialog = ({
   const [loadingConnectionReferenceInfo, setLoadingConnectionReferenceInfo] = useState(false)
   const [webResourceDetails, setWebResourceDetails] = useState<WebResource | null>(null)
   const [loadingWebResourceDetails, setLoadingWebResourceDetails] = useState(false)
+  const [dependencies, setDependencies] = useState<DependencyData | null>(null)
+  const [loadingDependencies, setLoadingDependencies] = useState(false)
 
   const sortedComponentSolutions = useMemo(() => {
     const getInstalledTime = (installedOn?: string) => {
@@ -279,6 +283,33 @@ export const ComponentDetailDialog = ({
       })
   }, [component])
 
+  // 获取组件依赖关系
+  useEffect(() => {
+    if (currentTab === 'dependencies' && component) {
+      setLoadingDependencies(true)
+      fetchComponentDependencies(component.id, component.category, component.name)
+        .then(data => {
+          setDependencies(data)
+        })
+        .catch(error => {
+          console.error('Failed to fetch dependencies:', error)
+          toast.error('Failed to load dependencies')
+          setDependencies({ required: [], dependent: [] })
+        })
+        .finally(() => {
+          setLoadingDependencies(false)
+        })
+    }
+  }, [currentTab, component])
+
+  // 处理点击依赖项
+  const handleDependencyClick = useCallback((dependency: ComponentDependency) => {
+    toast.info(`Navigating to ${dependency.displayName}`, {
+      description: `Type: ${dependency.type} | Category: ${dependency.category}`
+    })
+    // Future: 实际导航到依赖项的详情对话框
+  }, [])
+
   useEffect(() => {
     if (component) {
       setComponentSolutions(component.solutions || [])
@@ -351,7 +382,13 @@ export const ComponentDetailDialog = ({
                 <PropertiesTabContent metadata={component.metadata} />
               </TabsContent>
 
-              <TabsContent value="dependencies" className="mt-4 min-h-[500px]" />
+              <TabsContent value="dependencies" className="mt-4 min-h-[500px]">
+                <DependenciesTabContent
+                  dependencies={dependencies}
+                  loading={loadingDependencies}
+                  onDependencyClick={handleDependencyClick}
+                />
+              </TabsContent>
 
               <TabsContent value="solutions" className="space-y-4 mt-4 min-h-[500px]">
                 {loadingSolutions ? (

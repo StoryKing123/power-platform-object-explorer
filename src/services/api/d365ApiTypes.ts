@@ -450,3 +450,26 @@ export interface EnvironmentVariableInfo {
   type: number
   typeName: string
 }
+
+// Dependency Node
+export interface DependencyNode {
+  dependencynodeid: string
+  objectid: string
+  componenttype: number
+}
+
+// Dependency
+export interface Dependency {
+  dependencyid: string
+  dependencytype: number
+  requiredcomponentnodeid?: {
+    dependencynodeid: string
+    objectid: string
+    componenttype: number
+  }
+  dependentcomponentnodeid?: {
+    dependencynodeid: string
+    objectid: string
+    componenttype: number
+  }
+}
