@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Database, Package, Loader2, ExternalLink, Clock3 } from 'lucide-react'
+import { Package, Loader2, ExternalLink, Clock3 } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -351,22 +351,7 @@ export const ComponentDetailDialog = ({
                 <PropertiesTabContent metadata={component.metadata} />
               </TabsContent>
 
-              <TabsContent value="dependencies" className="space-y-4 mt-4 min-h-[500px]">
-                <p className="text-sm text-muted-foreground">
-                  This component has dependencies on the following items:
-                </p>
-                <div className="space-y-0">
-                  {['System User Entity', 'Security Role', 'Business Unit'].map((dep) => (
-                    <div
-                      key={dep}
-                      className="flex items-center gap-3 py-2 border-b border-border/40"
-                    >
-                      <Database className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm text-foreground">{dep}</span>
-                    </div>
-                  ))}
-                </div>
-              </TabsContent>
+              <TabsContent value="dependencies" className="mt-4 min-h-[500px]" />
 
               <TabsContent value="solutions" className="space-y-4 mt-4 min-h-[500px]">
                 {loadingSolutions ? (
