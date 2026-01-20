@@ -35,13 +35,13 @@ export async function fetchFlows(
   const params: ODataParams = {
     $filter: filter,
     $orderby: 'msdyn_displayname asc',
-    $top: pageSize,
   }
 
   return await d365ApiClient.getCollection<SolutionComponentSummary>(
     D365_API_CONFIG.endpoints.solutionComponentSummaries,
     params,
-    'v9.1'
+    'v9.1',
+    { maxPageSize: pageSize }
   )
 }
 
@@ -66,14 +66,14 @@ export async function searchFlows(
   const params: ODataParams = {
     $filter: filter,
     $orderby: 'msdyn_displayname asc',
-    $top: pageSize,
   }
 
   try {
     return await d365ApiClient.getCollection<SolutionComponentSummary>(
       D365_API_CONFIG.endpoints.solutionComponentSummaries,
       params,
-      'v9.1'
+      'v9.1',
+      { maxPageSize: pageSize }
     )
   } catch (error) {
     if (handleWorkflowIdUniqueUnsupported(error)) {

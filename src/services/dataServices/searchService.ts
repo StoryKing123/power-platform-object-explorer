@@ -226,19 +226,19 @@ export async function searchComponents(
     const filter = buildSearchFilter(solutionId, query, componentTypes)
 
     // Build query parameters
-    // Note: msdyn_solutioncomponentsummaries does not support $skip
+    // Note: paging is server-driven (Prefer: odata.maxpagesize) via @odata.nextLink
     const params = {
       ...D365_API_CONFIG.queries.solutionComponentSearch,
       $select: buildSolutionComponentSearchSelect(),
       $filter: filter,
-      $top: pageSize,
     }
 
     // Execute search using v9.0 API
     const response = await d365ApiClient.getCollection<SolutionComponentSummary>(
       D365_API_CONFIG.endpoints.solutionComponentSummaries,
       params,
-      'v9.0' // Use v9.0 for search
+      'v9.0', // Use v9.0 for search
+      { maxPageSize: pageSize }
     )
 
     return response

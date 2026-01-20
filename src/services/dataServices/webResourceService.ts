@@ -35,13 +35,13 @@ export async function fetchWebResources(
   const params: ODataParams = {
     $filter: buildWebResourceFilter(solutionId),
     $orderby: 'msdyn_displayname asc',
-    $top: pageSize,
   }
 
   return await d365ApiClient.getCollection<SolutionComponentSummary>(
     D365_API_CONFIG.endpoints.solutionComponentSummaries,
     params,
-    'v9.0'
+    'v9.0',
+    { maxPageSize: pageSize }
   )
 }
 
@@ -65,13 +65,13 @@ export async function searchWebResources(
   const params: ODataParams = {
     $filter: buildWebResourceFilter(solutionId, query),
     $orderby: 'msdyn_displayname asc',
-    $top: pageSize,
   }
 
   return await d365ApiClient.getCollection<SolutionComponentSummary>(
     D365_API_CONFIG.endpoints.solutionComponentSummaries,
     params,
-    'v9.0'
+    'v9.0',
+    { maxPageSize: pageSize }
   )
 }
 

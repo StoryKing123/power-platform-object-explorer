@@ -37,13 +37,13 @@ export async function fetchSecurityRoles(
   const params: ODataParams = {
     $filter: filter,
     $orderby: 'msdyn_displayname asc',
-    $top: pageSize,
   }
 
   return await d365ApiClient.getCollection<SolutionComponentSummary>(
     D365_API_CONFIG.endpoints.solutionComponentSummaries,
     params,
-    'v9.0'
+    'v9.0',
+    { maxPageSize: pageSize }
   )
 }
 
@@ -68,13 +68,13 @@ export async function searchSecurityRoles(
   const params: ODataParams = {
     $filter: filter,
     $orderby: 'msdyn_displayname asc',
-    $top: pageSize,
   }
 
   return await d365ApiClient.getCollection<SolutionComponentSummary>(
     D365_API_CONFIG.endpoints.solutionComponentSummaries,
     params,
-    'v9.0'
+    'v9.0',
+    { maxPageSize: pageSize }
   )
 }
 

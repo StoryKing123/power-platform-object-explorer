@@ -1,4 +1,5 @@
-import { Search, AlertCircle, RefreshCw, Package } from 'lucide-react'
+import { useEffect, useMemo, useRef } from 'react'
+import { Search, AlertCircle, RefreshCw, Package, Loader2 } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
@@ -38,7 +39,49 @@ export const ComponentTable = ({
   onRefresh,
   onLoadMore
 }: ComponentTableProps) => {
-  if (loading) {
+  const supportsIntersectionObserver = useMemo(
+    () => typeof window !== 'undefined' && 'IntersectionObserver' in window,
+    []
+  )
+
+  const loadMoreSentinelRef = useRef<HTMLDivElement | null>(null)
+  const didRequestLoadMoreRef = useRef(false)
+
+  useEffect(() => {
+    if (!supportsIntersectionObserver) return
+    if (!hasMore) return
+    if (loading) return
+    if (error) return
+    if (components.length === 0) return
+
+    const sentinel = loadMoreSentinelRef.current
+    if (!sentinel) return
+
+    const observer = new IntersectionObserver(
+      entries => {
+        if (!entries.some(e => e.isIntersecting)) return
+        if (didRequestLoadMoreRef.current) return
+        didRequestLoadMoreRef.current = true
+        onLoadMore()
+      },
+      {
+        root: null,
+        rootMargin: '240px 0px',
+        threshold: 0,
+      }
+    )
+
+    observer.observe(sentinel)
+    return () => observer.disconnect()
+  }, [components.length, error, hasMore, loading, onLoadMore, supportsIntersectionObserver])
+
+  useEffect(() => {
+    if (!loading) {
+      didRequestLoadMoreRef.current = false
+    }
+  }, [components.length, hasMore, loading])
+
+  if (loading && components.length === 0) {
     return (
       <div className="w-full">
         <Table>
@@ -82,7 +125,7 @@ export const ComponentTable = ({
     )
   }
 
-  if (error) {
+  if (error && components.length === 0) {
     return (
       <Card className="p-8 text-center">
         <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
@@ -136,14 +179,67 @@ export const ComponentTable = ({
         </Table>
       </div>
 
-      {hasMore && !loading && (
-        <div className="mt-4 text-center">
-          <Button onClick={onLoadMore} variant="outline" className="w-full">
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Load More
-          </Button>
-        </div>
-      )}
+      <div className="mt-4">
+        {error && (
+          <Card className="p-4">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="mt-0.5 h-4 w-4 text-red-500 shrink-0" />
+              <div className="min-w-0 flex-1">
+                <div className="text-sm font-medium">Failed to load more</div>
+                <div className="mt-0.5 text-xs text-muted-foreground break-words">{error.message}</div>
+              </div>
+              {error.retryable !== false && (
+                <Button size="sm" variant="outline" onClick={onLoadMore}>
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Retry
+                </Button>
+              )}
+            </div>
+          </Card>
+        )}
+
+        {hasMore && !error && (
+          <div className="mt-3">
+            <div ref={loadMoreSentinelRef} aria-hidden="true" className="h-px w-full" />
+
+            <Card className="p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="text-sm font-medium">Scroll to load more</div>
+                  <div className="text-xs text-muted-foreground">
+                    {supportsIntersectionObserver ? 'Loading triggers automatically near the bottom.' : 'Your browser does not support auto-loading.'}
+                  </div>
+                </div>
+
+                <div className="shrink-0 flex items-center gap-2">
+                  {loading ? (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Loading…
+                    </div>
+                  ) : (
+                    <Button
+                      onClick={onLoadMore}
+                      variant="outline"
+                      size="sm"
+                      disabled={!hasMore}
+                    >
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      Load more
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </Card>
+          </div>
+        )}
+
+        {!hasMore && !loading && (
+          <div className="mt-6 flex items-center justify-center">
+            <div className="text-xs text-muted-foreground">You’ve reached the end.</div>
+          </div>
+        )}
+      </div>
     </>
   )
 }

@@ -38,12 +38,16 @@ class D365ApiClient {
   /**
    * Get standard headers for D365 Web API requests
    */
-  private getHeaders(): HeadersInit {
+  private getHeaders(maxPageSize?: number): HeadersInit {
+    const effectivePageSize = maxPageSize ?? D365_API_CONFIG.pagination.defaultPageSize
     return {
       'Accept': 'application/json',
       'OData-MaxVersion': '4.0',
       'OData-Version': '4.0',
       'Content-Type': 'application/json',
+      // D365 uses server-driven paging; @odata.nextLink is returned when more data exists.
+      // $top limits total results and can suppress nextLink, so use Prefer to control page size.
+      'Prefer': `odata.maxpagesize=${effectivePageSize}`,
     }
   }
 
@@ -208,7 +212,12 @@ class D365ApiClient {
   /**
    * Generic GET method for fetching data
    */
-  async get<T>(endpoint: string, params?: ODataParams, apiVersion?: string): Promise<T> {
+  async get<T>(
+    endpoint: string,
+    params?: ODataParams,
+    apiVersion?: string,
+    options?: { maxPageSize?: number }
+  ): Promise<T> {
     const url = this.buildUrl(endpoint, params, apiVersion)
     const requestKey = url
 
@@ -216,7 +225,7 @@ class D365ApiClient {
       this.retryWithBackoff(async () => {
         const response = await this.fetchWithTimeout(url, {
           method: 'GET',
-          headers: this.getHeaders(),
+          headers: this.getHeaders(options?.maxPageSize),
         })
 
         return this.handleResponse<T>(response)
@@ -230,9 +239,10 @@ class D365ApiClient {
   async getCollection<T>(
     endpoint: string,
     params?: ODataParams,
-    apiVersion?: string
+    apiVersion?: string,
+    options?: { maxPageSize?: number }
   ): Promise<ODataResponse<T>> {
-    return this.get<ODataResponse<T>>(endpoint, params, apiVersion)
+    return this.get<ODataResponse<T>>(endpoint, params, apiVersion, options)
   }
 
   /**

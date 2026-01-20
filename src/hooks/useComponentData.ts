@@ -46,31 +46,29 @@ export function useComponentData(
   const [currentPage, setCurrentPage] = useState(0)
   const [totalCount, setTotalCount] = useState(0)
   const requestIdRef = useRef(0)
+  const nextLinkRef = useRef<string | null>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
 
   /**
    * Fetch data for a specific category
    */
   const fetchCategoryData = useCallback(
-    async (page: number = 0): Promise<{ components: Component[]; hasMore: boolean }> => {
+    async (): Promise<{ components: Component[]; nextLink?: string }> => {
       const pageSize = D365_API_CONFIG.pagination.defaultPageSize
-      const skip = page * pageSize
 
       try {
         let components: Component[] = []
-        let hasMore = false
+        let nextLink: string | undefined
 
         // NEW: If search query exists and is >= 2 chars, use server-side search
         // EXCEPTION: Some categories (flows, workflows) need specialized search to filter correctly
         const useGeneralSearch = searchQuery && searchQuery.trim().length >= 2 && !['flows', 'workflows', 'choices', 'webresources'].includes(category)
         if (useGeneralSearch) {
-          console.log('[useComponentData] Using server-side search:', { searchQuery, category, pageSize, skip })
-          const response = await searchComponents(searchQuery, category, pageSize, skip)
-          console.log('[useComponentData] Search response:', response)
+          console.log('[useComponentData] Using server-side search:', { searchQuery, category, pageSize })
+          const response = await searchComponents(searchQuery, category, pageSize, 0)
           components = response.value.map(transformSearchResult)
-          console.log('[useComponentData] Transformed components:', components)
-          hasMore = !!response['@odata.nextLink']
-          return { components, hasMore }
+          nextLink = response['@odata.nextLink']
+          return { components, nextLink }
         }
 
         // EXISTING: Otherwise use current fetch logic (or specialized search for flows/workflows)
@@ -80,7 +78,6 @@ export function useComponentData(
             const params: ODataParams = {
               $filter: '',
               $orderby: 'msdyn_displayname asc',
-              $top: pageSize,
             }
 
             const solutionId = await getDefaultSolutionId()
@@ -96,127 +93,128 @@ export function useComponentData(
             const response = await d365ApiClient.getCollection<SolutionComponentSummary>(
               D365_API_CONFIG.endpoints.solutionComponentSummaries,
               params,
-              'v9.0'
+              'v9.0',
+              { maxPageSize: pageSize }
             )
 
             components = response.value.map(transformSearchResult)
-            hasMore = !!response['@odata.nextLink']
+            nextLink = response['@odata.nextLink']
             break
           }
 
           case 'entities': {
             if (searchQuery) {
-              const response = await searchEntities(searchQuery, pageSize, skip)
+              const response = await searchEntities(searchQuery, pageSize, 0)
               components = response.value.map(transformSearchResult)
-              hasMore = !!response['@odata.nextLink']
+              nextLink = response['@odata.nextLink']
             } else {
-              const response = await fetchEntities(pageSize, skip)
+              const response = await fetchEntities(pageSize, 0)
               components = response.value.map(transformSearchResult)
-              hasMore = !!response['@odata.nextLink']
+              nextLink = response['@odata.nextLink']
             }
             break
           }
 
           case 'apps': {
             if (searchQuery) {
-              const response = await searchApps(searchQuery, pageSize, skip)
+              const response = await searchApps(searchQuery, pageSize, 0)
               components = response.value.map(transformSearchResult)
-              hasMore = !!response['@odata.nextLink']
+              nextLink = response['@odata.nextLink']
             } else {
-              const response = await fetchApps(pageSize, skip)
+              const response = await fetchApps(pageSize, 0)
               components = response.value.map(transformSearchResult)
-              hasMore = !!response['@odata.nextLink']
+              nextLink = response['@odata.nextLink']
             }
             break
           }
 
           case 'flows': {
             if (searchQuery) {
-              const response = await searchFlows(searchQuery, pageSize, skip)
+              const response = await searchFlows(searchQuery, pageSize, 0)
               components = response.value.map(transformSearchResult)
-              hasMore = !!response['@odata.nextLink']
+              nextLink = response['@odata.nextLink']
             } else {
-              const response = await fetchFlows(pageSize, skip)
+              const response = await fetchFlows(pageSize, 0)
               components = response.value.map(transformSearchResult)
-              hasMore = !!response['@odata.nextLink']
+              nextLink = response['@odata.nextLink']
             }
             break
           }
 
           case 'securityroles': {
             if (searchQuery) {
-              const response = await searchSecurityRoles(searchQuery, pageSize, skip)
+              const response = await searchSecurityRoles(searchQuery, pageSize, 0)
               components = response.value.map(transformSearchResult)
-              hasMore = !!response['@odata.nextLink']
+              nextLink = response['@odata.nextLink']
             } else {
-              const response = await fetchSecurityRoles(pageSize, skip)
+              const response = await fetchSecurityRoles(pageSize, 0)
               components = response.value.map(transformSearchResult)
-              hasMore = !!response['@odata.nextLink']
+              nextLink = response['@odata.nextLink']
             }
             break
           }
 
           case 'webresources': {
             if (searchQuery) {
-              const response = await searchWebResources(searchQuery, pageSize, skip)
+              const response = await searchWebResources(searchQuery, pageSize, 0)
               components = response.value.map(transformSearchResult)
-              hasMore = !!response['@odata.nextLink']
+              nextLink = response['@odata.nextLink']
             } else {
-              const response = await fetchWebResources(pageSize, skip)
+              const response = await fetchWebResources(pageSize, 0)
               components = response.value.map(transformSearchResult)
-              hasMore = !!response['@odata.nextLink']
+              nextLink = response['@odata.nextLink']
             }
             break
           }
 
           case 'choices': {
             if (searchQuery) {
-              const response = await searchChoices(searchQuery, pageSize, skip)
+              const response = await searchChoices(searchQuery, pageSize, 0)
               components = response.value.map(transformSearchResult)
-              hasMore = !!response['@odata.nextLink']
+              nextLink = response['@odata.nextLink']
             } else {
-              const response = await fetchChoices(pageSize, skip)
+              const response = await fetchChoices(pageSize, 0)
               components = response.value.map(transformSearchResult)
-              hasMore = !!response['@odata.nextLink']
+              nextLink = response['@odata.nextLink']
             }
             break
           }
 
           case 'connectionreferences': {
             if (searchQuery) {
-              const response = await searchConnectionReferences(searchQuery, pageSize, skip)
+              const response = await searchConnectionReferences(searchQuery, pageSize, 0)
               components = response.value.map(transformSearchResult)
-              hasMore = !!response['@odata.nextLink']
+              nextLink = response['@odata.nextLink']
             } else {
-              const response = await fetchConnectionReferences(pageSize, skip)
+              const response = await fetchConnectionReferences(pageSize, 0)
               components = response.value.map(transformSearchResult)
-              hasMore = !!response['@odata.nextLink']
+              nextLink = response['@odata.nextLink']
             }
             break
           }
 
           case 'connectors': {
             if (searchQuery) {
-              const response = await searchConnectors(searchQuery, pageSize, skip)
+              const response = await searchConnectors(searchQuery, pageSize, 0)
               components = response.value.map(transformSearchResult)
-              hasMore = !!response['@odata.nextLink']
+              nextLink = response['@odata.nextLink']
             } else {
-              const response = await fetchConnectors(pageSize, skip)
+              const response = await fetchConnectors(pageSize, 0)
               components = response.value.map(transformSearchResult)
-              hasMore = !!response['@odata.nextLink']
+              nextLink = response['@odata.nextLink']
             }
             break
           }
 
           case 'environmentvariables': {
             if (searchQuery) {
-              const response = await searchEnvironmentVariables(searchQuery, pageSize, skip)
+              const response = await searchEnvironmentVariables(searchQuery, pageSize, 0)
               components = response.value.map(transformSearchResult)
-              hasMore = !!response['@odata.nextLink']
+              nextLink = response['@odata.nextLink']
             } else {
-              const response = await fetchEnvironmentVariables(pageSize, skip)
+              const response = await fetchEnvironmentVariables(pageSize, 0)
               components = response.value.map(transformSearchResult)
-              hasMore = !!response['@odata.nextLink']
+              nextLink = response['@odata.nextLink']
             }
             break
           }
@@ -225,7 +223,7 @@ export function useComponentData(
             components = []
         }
 
-        return { components, hasMore }
+        return { components, nextLink }
       } catch (err) {
         throw handleApiError(err)
       }
@@ -343,21 +341,41 @@ export function useComponentData(
 
       try {
         // Check cache first (only for first page without search)
-        if (page === 0 && !searchQuery) {
+        // 注意：缓存不包含 nextLink，因此仍需要请求一次首屏以启用分页。
+        if (page === 0 && !append && !searchQuery) {
           const cachedData = cacheService.getCachedComponentList<Component[]>(category)
           if (cachedData) {
             if (isStaleRequest()) return
             setData(cachedData)
-            setLoading(false)
             setHasMore(cachedData.length >= D365_API_CONFIG.pagination.defaultPageSize)
-            return
           }
         }
 
         // Fetch data
-        const { components, hasMore } = await fetchCategoryData(page)
+        let components: Component[] = []
+        let nextLink: string | undefined
+
+        if (append) {
+          const next = nextLinkRef.current
+          if (!next) {
+            setHasMore(false)
+            setCurrentPage(page)
+            return
+          }
+
+          const response = await d365ApiClient.getNextPage<SolutionComponentSummary>(next)
+          components = response.value.map(transformSearchResult)
+          nextLink = response['@odata.nextLink']
+        } else {
+          nextLinkRef.current = null
+          const result = await fetchCategoryData()
+          components = result.components
+          nextLink = result.nextLink
+        }
 
         if (isStaleRequest()) return
+
+        nextLinkRef.current = nextLink || null
 
         // Update state
         if (append) {
@@ -383,7 +401,7 @@ export function useComponentData(
 
         if (isStaleRequest()) return
 
-        setHasMore(hasMore)
+        setHasMore(!!nextLinkRef.current)
         setCurrentPage(page)
       } catch (err) {
         if (isStaleRequest()) return
@@ -416,6 +434,7 @@ export function useComponentData(
   const refresh = useCallback(() => {
     cacheService.invalidateCategory(category)
     setCurrentPage(0)
+    nextLinkRef.current = null
     loadData(0, false)
   }, [category, loadData])
 
@@ -435,6 +454,9 @@ export function useComponentData(
    */
   useEffect(() => {
     setCurrentPage(0)
+    setData([])
+    setHasMore(false)
+    setError(null)
     loadData(0, false)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [category, searchQuery])
