@@ -235,6 +235,7 @@ export function buildComponentTypeFilter(types?: number[]): string | null {
 }
 
 export async function getCategoryTypeFilter(category: CategoryCountId, fallbackTypes: number[]): Promise<string> {
-  const types = (await getCategoryComponentTypes(category)) ?? fallbackTypes
-  return buildComponentTypeFilter(types) ?? buildComponentTypeFilter(fallbackTypes) ?? ''
+  const detectedTypes = await getCategoryComponentTypes(category)
+  const mergedTypes = Array.from(new Set<number>([...(detectedTypes ?? []), ...fallbackTypes]))
+  return buildComponentTypeFilter(mergedTypes) ?? buildComponentTypeFilter(fallbackTypes) ?? ''
 }
