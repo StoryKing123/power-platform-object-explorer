@@ -234,7 +234,8 @@ class D365ApiClient {
   }
 
   /**
-   * Fetch OData collection with pagination support
+   * Fetch OData collection (single page).
+   * D365 uses server-driven paging; use `@odata.nextLink` (via `getNextPage`) to fetch more.
    */
   async getCollection<T>(
     endpoint: string,
@@ -243,6 +244,37 @@ class D365ApiClient {
     options?: { maxPageSize?: number }
   ): Promise<ODataResponse<T>> {
     return this.get<ODataResponse<T>>(endpoint, params, apiVersion, options)
+  }
+
+  /**
+   * Fetch entire OData collection by following `@odata.nextLink` until exhausted.
+   */
+  async getAllCollection<T>(
+    endpoint: string,
+    params?: ODataParams,
+    apiVersion?: string,
+    options?: { maxPageSize?: number; maxPages?: number }
+  ): Promise<ODataResponse<T>> {
+    const maxPages = options?.maxPages ?? 100
+    const firstPage = await this.getCollection<T>(endpoint, params, apiVersion, { maxPageSize: options?.maxPageSize })
+
+    const allValues = [...(firstPage.value ?? [])]
+    let nextLink = firstPage['@odata.nextLink']
+    let pageCount = 1
+
+    while (nextLink) {
+      if (pageCount >= maxPages) {
+        throw new Error(`Exceeded maxPages (${maxPages}) while fetching ${endpoint}`)
+      }
+
+      const page = await this.getNextPage<T>(nextLink)
+      allValues.push(...(page.value ?? []))
+      nextLink = page['@odata.nextLink']
+      pageCount += 1
+    }
+
+    const { ['@odata.nextLink']: _ignored, ...rest } = firstPage as unknown as Record<string, unknown>
+    return { ...(rest as ODataResponse<T>), value: allValues }
   }
 
   /**

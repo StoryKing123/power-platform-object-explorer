@@ -155,13 +155,14 @@ function computeCategoryCounts(rows: SolutionComponentCountSummary[]): { counts:
 
 async function fetchCategoryCountsFromApi(): Promise<CategoryCounts> {
   const solutionId = await getDefaultSolutionId()
-  const response = await d365ApiClient.getCollection<SolutionComponentCountSummary>(
+  const response = await d365ApiClient.getAllCollection<SolutionComponentCountSummary>(
     D365_API_CONFIG.endpoints.solutionComponentCountSummaries,
     {
       $select: 'msdyn_componentlogicalname,msdyn_componenttype,msdyn_total,msdyn_workflowcategory,msdyn_subtype',
       $filter: `msdyn_solutionid eq ${solutionId}`,
     },
-    COUNT_API_VERSION
+    COUNT_API_VERSION,
+    { maxPageSize: D365_API_CONFIG.pagination.maxPageSize }
   )
 
   const { counts, types } = computeCategoryCounts(response.value || [])
