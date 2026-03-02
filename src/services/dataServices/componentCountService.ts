@@ -28,11 +28,34 @@ let cachedCounts: { value: CategoryCounts; types: CategoryComponentTypes; cached
 let pendingFetch: Promise<CategoryCounts> | null = null
 
 function safeNumber(value: unknown): number {
-  return typeof value === 'number' && Number.isFinite(value) ? value : 0
+  if (typeof value === 'number' && Number.isFinite(value)) return value
+  if (typeof value === 'string' && value.trim()) {
+    const parsed = Number(value)
+    if (Number.isFinite(parsed)) return parsed
+  }
+  return 0
 }
 
 function logicalName(row: SolutionComponentCountSummary): string {
   return String(row.msdyn_componentlogicalname || '').toLowerCase()
+}
+
+function normalizeToken(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]/g, '')
+}
+
+function normalizeLogicalName(row: SolutionComponentCountSummary): string {
+  return normalizeToken(logicalName(row))
+}
+
+function safeType(value: unknown): number | null {
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : null
+}
+
+function matchesLogicalName(name: string, aliases: string[]): boolean {
+  if (!name) return false
+  return aliases.some(alias => name === alias || name.endsWith(alias))
 }
 
 function computeCategoryCounts(rows: SolutionComponentCountSummary[]): { counts: CategoryCounts; types: CategoryComponentTypes } {
@@ -64,53 +87,57 @@ function computeCategoryCounts(rows: SolutionComponentCountSummary[]): { counts:
 
   function categorize(row: SolutionComponentCountSummary): CategoryCountId[] {
     const categories: CategoryCountId[] = []
-    const name = logicalName(row)
-    const type = row.msdyn_componenttype
+    const normalizedName = normalizeLogicalName(row)
+    const type = safeType(row.msdyn_componenttype)
     const total = safeNumber(row.msdyn_total)
+    const workflowCategory = safeType(row.msdyn_workflowcategory)
 
-    if (type === 1 || name === 'entity') {
+    if (type === 1 || matchesLogicalName(normalizedName, ['entity', 'table'])) {
       counts.entities += total
       categories.push('entities')
     }
 
-    if (type === 80 || type === 300 || name === 'appmodule' || name === 'canvasapp') {
+    if (type === 80 || type === 300 || matchesLogicalName(normalizedName, ['appmodule', 'canvasapp', 'modeldrivenapp'])) {
       counts.apps += total
       categories.push('apps')
     }
 
-    if (type === 20 || name === 'role') {
+    if (type === 20 || matchesLogicalName(normalizedName, ['role', 'securityrole'])) {
       counts.securityroles += total
       categories.push('securityroles')
     }
 
-    if (type === 61 || name === 'webresource') {
+    if (type === 61 || matchesLogicalName(normalizedName, ['webresource'])) {
       counts.webresources += total
       categories.push('webresources')
     }
 
-    if (type === 9 || name === 'optionset') {
+    if (type === 9 || matchesLogicalName(normalizedName, ['optionset', 'globaloptionset', 'globaloptionsetdefinition', 'choice'])) {
       counts.choices += total
       categories.push('choices')
     }
 
-    if (type === 10150 || name === 'connectionreference') {
+    if (type === 10150 || matchesLogicalName(normalizedName, ['connectionreference'])) {
       counts.connectionreferences += total
       categories.push('connectionreferences')
     }
 
-    if (type === 372 || name === 'connector') {
+    if (type === 372 || matchesLogicalName(normalizedName, ['connector', 'customconnector'])) {
       counts.connectors += total
       categories.push('connectors')
     }
 
-    const isEnvVar = type === 380 || type === 381 || name === 'environmentvariabledefinition' || name === 'environmentvariablevalue'
+    const isEnvVar =
+      type === 380 ||
+      type === 381 ||
+      matchesLogicalName(normalizedName, ['environmentvariabledefinition', 'environmentvariablevalue', 'environmentvariable'])
     if (isEnvVar) {
       counts.environmentvariables += total
       categories.push('environmentvariables')
     }
 
-    const isWorkflow = type === 29 || name === 'workflow'
-    const isFlowCategory = row.msdyn_workflowcategory === 5 || row.msdyn_workflowcategory === '5'
+    const isWorkflow = type === 29 || matchesLogicalName(normalizedName, ['workflow', 'flow'])
+    const isFlowCategory = workflowCategory === 5
     if (isWorkflow && isFlowCategory) {
       counts.flows += total
       categories.push('flows')
@@ -123,7 +150,7 @@ function computeCategoryCounts(rows: SolutionComponentCountSummary[]): { counts:
     const categories = categorize(row)
     if (categories.length === 0) return
 
-    const type = typeof row.msdyn_componenttype === 'number' ? row.msdyn_componenttype : null
+    const type = safeType(row.msdyn_componenttype)
     categories.forEach(category => {
       if (type !== null) {
         typeSets[category].add(type)
