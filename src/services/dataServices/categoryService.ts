@@ -3,7 +3,7 @@
 import { d365ApiClient } from '../api/d365ApiClient'
 import { D365_API_CONFIG } from '../api/d365ApiConfig'
 import type { Category } from '@/data/mockData'
-import { fetchCategoryCounts } from './componentCountService'
+import { fetchCategoryCounts, getCategoryTypeFilter } from './componentCountService'
 import { getDefaultSolutionId } from './searchService'
 
 /**
@@ -228,15 +228,19 @@ async function getPluginCount(): Promise<number> {
 async function getWebResourceCount(): Promise<number> {
   try {
     const solutionId = await getDefaultSolutionId()
+    const typeFilter = await getCategoryTypeFilter('webresources', [61])
     const response = await d365ApiClient.getCollection<any>(
       D365_API_CONFIG.endpoints.solutionComponentCountSummaries,
       {
         $select: 'msdyn_componenttype,msdyn_total',
-        $filter: `msdyn_solutionid eq ${solutionId} and msdyn_componenttype eq 61`,
+        $filter: `${typeFilter} and msdyn_solutionid eq ${solutionId}`,
       }
     )
-    const row = response.value?.find((r: any) => r.msdyn_componenttype === 61)
-    return row?.msdyn_total || 0
+    let count = 0
+    for (const row of response.value || []) {
+      count += typeof row.msdyn_total === 'number' ? row.msdyn_total : 0
+    }
+    return count
   } catch (error) {
     console.warn('Failed to get web resource count:', error)
     return 0

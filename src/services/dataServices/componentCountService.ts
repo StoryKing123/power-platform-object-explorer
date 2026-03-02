@@ -237,6 +237,10 @@ export function buildComponentTypeFilter(types?: number[]): string | null {
 
 export async function getCategoryTypeFilter(category: CategoryCountId, fallbackTypes: number[]): Promise<string> {
   const detectedTypes = await getCategoryComponentTypes(category)
-  const mergedTypes = Array.from(new Set<number>([...(detectedTypes ?? []), ...fallbackTypes]))
-  return buildComponentTypeFilter(mergedTypes) ?? buildComponentTypeFilter(fallbackTypes) ?? ''
+  // Prefer environment-detected types; only fall back when detection is unavailable.
+  // Mixing detected and fallback values can introduce invalid componenttype codes in some environments.
+  if (detectedTypes && detectedTypes.length > 0) {
+    return buildComponentTypeFilter(detectedTypes) ?? ''
+  }
+  return buildComponentTypeFilter(fallbackTypes) ?? ''
 }
